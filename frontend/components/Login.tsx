@@ -1,8 +1,5 @@
 import React from 'react'
 import Image from 'next/image'
-
-import Link from 'next/link'
-import Logo from './Logo'
 import { useState } from 'react'
 import { User, Stethoscope } from 'lucide-react'
 
@@ -20,11 +17,8 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
                 <div className="w-full max-w-sm flex flex-col items-center gap-8">
 
                     <div className="flex flex-col items-center gap-4 text-center">
-                        <div className="mb-2">
-                            <Logo />
-                        </div>
                         <h1 className="font-sans text-5xl tracking-tight">
-                            Welcome back 👋
+                            Welcome back
                         </h1>
                         <p className="text-neutral-500 text-sm font-serif italic">
                             Login to your account to continue
@@ -76,23 +70,6 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
                             Log in
                         </button>
                     </form>
-
-                    {/* Footer / Links */}
-                    <div className="flex flex-col items-center gap-4 text-sm text-neutral-500">
-                        <a href="#" className="hover:text-black transition-colors underline decoration-neutral-300 hover:decoration-black underline-offset-4">
-                            Forgot password?
-                        </a>
-                        <p>
-                            Don't have an account?{' '}
-                            <button
-                                onClick={onNavigateToRegister}
-                                className="text-blue-600 font-medium hover:text-blue-700 transition-colors"
-                            >
-                                Sign up
-                            </button>
-                        </p>
-                    </div>
-
                 </div>
             </div>
 
