@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TBPBackend.Api", "TBPBackend.Api\TBPBackend.Api.csproj", "{57B7D03C-E5FF-46E0-86AF-EEFFEAF1756C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TBPBackend.Tests", "TBPBackend.Tests\TBPBackend.Tests.csproj", "{C3BD002F-AE97-4359-9F6A-B08516DBAF6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TBPBackend.Api", "TBPBackend.Api\TBPBackend.Api.csproj", "{F9146466-5900-4094-A5F1-3699C3C5B37C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,13 +10,13 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{57B7D03C-E5FF-46E0-86AF-EEFFEAF1756C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{57B7D03C-E5FF-46E0-86AF-EEFFEAF1756C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{57B7D03C-E5FF-46E0-86AF-EEFFEAF1756C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{57B7D03C-E5FF-46E0-86AF-EEFFEAF1756C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C3BD002F-AE97-4359-9F6A-B08516DBAF6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C3BD002F-AE97-4359-9F6A-B08516DBAF6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3BD002F-AE97-4359-9F6A-B08516DBAF6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3BD002F-AE97-4359-9F6A-B08516DBAF6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9146466-5900-4094-A5F1-3699C3C5B37C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9146466-5900-4094-A5F1-3699C3C5B37C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9146466-5900-4094-A5F1-3699C3C5B37C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9146466-5900-4094-A5F1-3699C3C5B37C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
