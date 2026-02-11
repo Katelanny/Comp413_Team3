@@ -2,6 +2,7 @@ import React from 'react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { User, Stethoscope } from 'lucide-react'
+import Logo from './Logo'
 
 interface LoginProps {
     onNavigateToRegister: () => void;
@@ -13,7 +14,10 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
     return (
         <main className="min-h-screen w-full flex bg-white text-neutral-900 font-sans p-4 gap-4">
             <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-20">
-                <h1 className='text-4xl font-light italic text-neutral-300 absolute top-10 left-10 font-serif'>Lesion Tracker</h1>
+                <div className="absolute top-10 left-10 flex items-center gap-3">
+                    <Logo />
+                    <h1 className="text-4xl font-light italic text-neutral-300 font-serif">Lesion Tracker</h1>
+                </div>
                 <div className="w-full max-w-sm flex flex-col items-center gap-8">
 
                     <div className="flex flex-col items-center gap-4 text-center">
