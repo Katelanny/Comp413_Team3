@@ -5,7 +5,7 @@ namespace TBPBackend.Api.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("[controller]")]
+[Route("/api/weather")]
 public class WeatherForecastController : ControllerBase
 {
     private static readonly string[] Summaries =
@@ -20,7 +20,7 @@ public class WeatherForecastController : ControllerBase
             {
                 Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
                 TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+                Summary = Summaries[Random.Shared.Next(Summaries.Length)],
             })
             .ToArray();
     }
