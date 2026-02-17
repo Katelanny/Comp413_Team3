@@ -8,6 +8,7 @@ using Microsoft.OpenApi;
 
 using TBPBackend.Api.Interfaces;
 using TBPBackend.Api.Models;
+using TBPBackend.Api.Repository;
 using TBPBackend.Api.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -85,7 +86,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// adding the services
+builder.Services.AddScoped<IAccountRepo, AccountRepo>();
+
 builder.Services.AddScoped<ITokenService, TokenService>();
+
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 var app = builder.Build();
@@ -93,9 +99,9 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var role in new[] { "ADMIN", "USER" })
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
+    // foreach (var role in new[] { "ADMIN", "USER" })
+    //     if (!await roleManager.RoleExistsAsync(role))
+    //         await roleManager.CreateAsync(new IdentityRole(role));
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
 }

@@ -7,5 +7,5 @@ public interface ITokenService
 
     public string CreateRefreshToken();
 
-    public static abstract string HashRefreshToken(string refreshToken);
+    public string HashRefreshToken(string refreshToken);
 }

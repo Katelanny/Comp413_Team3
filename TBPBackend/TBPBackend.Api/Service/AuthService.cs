@@ -7,8 +7,8 @@ namespace TBPBackend.Api.Service;
 
 public class AuthService : IAuthService
 {
-    private IAccountRepo _accountRepo;
-    private ITokenService _tokenService;
+    private readonly IAccountRepo _accountRepo;
+    private readonly ITokenService _tokenService;
     
     public AuthService(IAccountRepo accountRepo, ITokenService tokenService)
     {
@@ -19,10 +19,10 @@ public class AuthService : IAuthService
     public static CookieOptions PartialCookieOptions(DateTimeOffset expires) => new CookieOptions
     {
         HttpOnly = true,
-        Secure = true,
+        Secure = false,
         SameSite = SameSiteMode.Lax,
         Expires = expires,
-        Path = "/api/account/refresh"
+        Path = "/api/account"
     };
     
     public async Task<ServiceResponse> Register(RegisterDto dto)
@@ -35,7 +35,7 @@ public class AuthService : IAuthService
         };
         // Creating the token/token hash
         var token = _tokenService.CreateRefreshToken();
-        var tokenHash = TokenService.HashRefreshToken(token);
+        var tokenHash = _tokenService.HashRefreshToken(token);
         // Passing to our repo to actually store in the db
         var res = await _accountRepo.CreateUser(dto, tokenHash, user);
         // If it failed, we want to drill that up
@@ -48,14 +48,14 @@ public class AuthService : IAuthService
         // Now we know it is already stored, and we need to 
         return ServiceResponse.Ok
         (
-            token, PartialCookieOptions(DateTimeOffset.UtcNow), accessToken
+            token, PartialCookieOptions(DateTimeOffset.UtcNow.AddDays(7)), accessToken
         );
     }
     
     public async Task<ServiceResponse> Login(LoginDto dto)
     {
         var token = _tokenService.CreateRefreshToken();
-        var tokenHash = TokenService.HashRefreshToken(token);
+        var tokenHash = _tokenService.HashRefreshToken(token);
         var loginRes = await _accountRepo.Login(dto, tokenHash);
         if (!loginRes.Success || loginRes.User == null)
         {
@@ -65,12 +65,31 @@ public class AuthService : IAuthService
         var accessToken = _tokenService.CreateAccessToken(loginRes.User);
         return ServiceResponse.Ok
         (
-            token, PartialCookieOptions(DateTimeOffset.UtcNow), accessToken
+            token, PartialCookieOptions(DateTimeOffset.UtcNow.AddDays(7)), accessToken
         );
     }
 
-    public Task<bool> Logout()
+    public async Task<ServiceResponse> CheckRefreshToken(string refreshToken)
     {
-        throw new NotImplementedException();
+        
+        var refreshHash = _tokenService.HashRefreshToken(refreshToken);
+        var isTokenHash = await _accountRepo.CheckTokenHash(refreshHash);
+        // We want to only proceed if we found a match and have the user in hand
+        if (!isTokenHash.IsMatch || isTokenHash.User == null)
+        {
+            return ServiceResponse.Fail("Token must have expired or we couldn't load your profile.");
+        }
+        // Now we want to create a new access and give it to them
+        var accessToken = _tokenService.CreateAccessToken(isTokenHash.User);
+        return ServiceResponse.Ok(
+                refreshToken, PartialCookieOptions(DateTimeOffset.UtcNow), accessToken);
     }
+    
+    public async Task<bool> Logout(string refreshHash)
+    {
+        // Here we are going to do modifications into the db on the repo
+        var status = await _accountRepo.Logout(refreshHash);
+        return status.Success;
+    }
+    
 }

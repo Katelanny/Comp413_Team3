@@ -32,10 +32,10 @@ public class TokenService : ITokenService
         };
         
         // Adding the roles that are passed in
-        foreach (var role in roles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-        }
+        // foreach (var role in roles)
+        // {
+        //     claims.Add(new Claim(ClaimTypes.Role, role));
+        // }
         var creds = new SigningCredentials(_secretKey, SecurityAlgorithms.HmacSha512Signature);
 
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -60,11 +60,12 @@ public class TokenService : ITokenService
         return Convert.ToBase64String(bytes);
     }
 
-    public static string HashRefreshToken(string refreshToken)
+    public string HashRefreshToken(string refreshToken)
     {
         var bytes = Encoding.UTF8.GetBytes(refreshToken);
         // generating the hash
-        var hash = SHA3_256.HashData(bytes);
+        var hash = SHA256.HashData(bytes);
         return Convert.ToBase64String(hash);
     }
 }
+

@@ -1,11 +1,12 @@
-using System.Data.Entity.Infrastructure;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using TBPBackend.Api.Data;
 using TBPBackend.Api.Dtos.Account;
 using TBPBackend.Api.Interfaces;
 using TBPBackend.Api.Models;
 using TBPBackend.Api.Models.Auth;
 using TBPBackend.Api.Models.Tables;
+using DbUpdateException = System.Data.Entity.Infrastructure.DbUpdateException;
 
 namespace TBPBackend.Api.Repository;
 
@@ -69,5 +70,37 @@ public class AccountRepo : IAccountRepo
         // if something went wrong we alert the user 
         if (!refreshStorageStatus) return new DbLoginResponse() { Success = false, Message = "Refresh storage did not store" };
         return new DbLoginResponse() { Success = true, User = user };
+    }
+
+    public async Task<IsRefreshMatch> CheckTokenHash(string tokenHash)
+    {
+        // We are going to check if it's stored
+        var stored = await _db.RefreshTokens
+            .Include(rt => rt.AppUser)
+            .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash);
+        if (stored is null) return new IsRefreshMatch
+        {
+            IsMatch = false,
+            Message="Invalid refresh token."
+        };
+        if (stored.ExpiresAtUtc <= DateTime.UtcNow) return new IsRefreshMatch
+        {
+            IsMatch = false,
+            Message="Refresh token expired."
+        };
+        return new IsRefreshMatch{IsMatch=true, Message="Refresh token is good", User=stored.AppUser};
+    }
+    
+    public async Task<DbResponse> Logout(string refreshHash)
+    {
+        // Now we are going to make the deletion on the bd
+        var stored = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.TokenHash == refreshHash);
+        if (stored != null && stored.RevokedAtUtc == null)
+        {
+            stored.RevokedAtUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return new DbResponse { Success = true };
+        }
+        return new DbResponse{Success = false, Message = "Couldn't log out"};
     }
 }

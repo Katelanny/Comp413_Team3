@@ -11,4 +11,9 @@ public interface IAccountRepo
     public Task<DbResponse> CreateUser(RegisterDto model, string tokenHash, AppUser user);
 
     public Task<DbLoginResponse> Login(LoginDto model, string tokenHash);
+    
+    public Task<DbResponse> Logout(string refreshHash);
+
+    public Task<IsRefreshMatch> CheckTokenHash(string tokenHash);
+    
 }

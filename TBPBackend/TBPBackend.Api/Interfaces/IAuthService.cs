@@ -9,5 +9,7 @@ public interface IAuthService
     
     public Task<ServiceResponse> Register(RegisterDto dto);
 
-    public Task<bool> Logout();
+    public Task<bool> Logout(string refreshToken);
+
+    public Task<ServiceResponse> CheckRefreshToken(string refreshHash);
 }
