@@ -69,7 +69,7 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
 
                         <button
                             type="submit"
-                            className="mt-4 w-full py-3.5 bg-gradient-to-r from-blue-400 to-blue-600 text-white rounded-xl font-medium hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 hover:cursor-pointer"
+                            className="mt-4 w-full py-3.5 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-xl font-medium hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 hover:cursor-pointer"
                         >
                             Log in
                         </button>

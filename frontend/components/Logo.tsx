@@ -1,11 +1,17 @@
 import React from 'react';
 
 const Logo = () => {
-    return (
-        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-white rounded-md" />
-        </div>
-    );
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logo.png"
+      alt="Lesion Tracker"
+      width={150}
+      height={150}
+      className="h-16 w-16 sm:h-20 sm:w-20 object-contain"
+      fetchPriority="high"
+    />
+  );
 };
 
 export default Logo;

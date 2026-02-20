@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 //hard coded temporarily
 const PATIENTS = [
-  { id: "1", name: "Sahitha Vuddagiri :)", mrn: "12345", lastVisit: "2026-01-28" },
+  { id: "1", name: "Steven Lesley", mrn: "12345", lastVisit: "2026-01-28" },
   { id: "2", name: "Michael Randolph", mrn: "12346", lastVisit: "2026-01-25" },
   { id: "3", name: "John Doe", mrn: "12347", lastVisit: "2026-01-20" },
 ];
@@ -92,7 +92,7 @@ export default function DoctorDashboard() {
                 placeholder="Search patients..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
               />
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function DoctorDashboard() {
                   onClick={() => setSelectedPatient(patient)}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors ${
                     selectedPatient.id === patient.id
-                      ? "bg-blue-500 text-white"
+                      ? "bg-teal-600 text-white"
                       : "hover:bg-neutral-50 text-neutral-700"
                   }`}
                 >
@@ -122,7 +122,7 @@ export default function DoctorDashboard() {
                     <p
                       className={`text-sm truncate ${
                         selectedPatient.id === patient.id
-                          ? "text-blue-100"
+                          ? "text-teal-100"
                           : "text-neutral-500"
                       }`}
                     >
@@ -144,8 +144,7 @@ export default function DoctorDashboard() {
                 {selectedPatient.name}
               </h1>
               <p className="text-neutral-500 text-sm mt-0.5">
-                MRN: {selectedPatient.mrn} | DOB: 05/14/1978 | Lesion: Left
-                Forearm
+                MRN: {selectedPatient.mrn} | DOB: 05/14/1978
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -168,7 +167,11 @@ export default function DoctorDashboard() {
             </div>
           </div>
 
-          {/* Comparison cards */}
+          {/* Comparison: body photos over time; zoom to focus on a lesion */}
+          <p className="text-sm text-neutral-500 mb-4">
+            Compare body photos from two visits. Use zoom to focus on a
+            specific lesion; metrics below apply to the zoomed region.
+          </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Left card */}
             <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
@@ -183,23 +186,23 @@ export default function DoctorDashboard() {
                   <button
                     type="button"
                     className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500"
-                    aria-label="Zoom"
+                    aria-label="Zoom in on lesion"
+                    title="Zoom in on lesion"
                   >
                     <ZoomIn size={18} />
                   </button>
                   <button
                     type="button"
                     className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500"
-                    aria-label="Edit"
+                    aria-label="Edit / annotate"
                   >
                     <Pencil size={18} />
                   </button>
                 </div>
               </div>
-              <div className="aspect-[4/3] bg-neutral-100 relative flex items-center justify-center">
-                <span className="text-neutral-400 text-sm">
-                  Lesion Image
-                </span>
+              <div className="aspect-[4/3] bg-neutral-100 relative flex flex-col items-center justify-center gap-1">
+                <span className="text-neutral-400 text-sm">Body photo</span>
+                <span className="text-neutral-400 text-xs">Zoom to view lesion</span>
               </div>
               <div className="p-4 grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -243,16 +246,15 @@ export default function DoctorDashboard() {
                   <button
                     type="button"
                     className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500"
-                    aria-label="Edit"
+                    aria-label="Edit / annotate"
                   >
                     <Pencil size={18} />
                   </button>
                 </div>
               </div>
-              <div className="aspect-[4/3] bg-neutral-100 relative flex items-center justify-center">
-                <span className="text-neutral-400 text-sm">
-                  Lesion Image
-                </span>
+              <div className="aspect-[4/3] bg-neutral-100 relative flex flex-col items-center justify-center gap-1">
+                <span className="text-neutral-400 text-sm">Body photo</span>
+                <span className="text-neutral-400 text-xs">Zoom to view lesion</span>
               </div>
               <div className="p-4 grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -275,11 +277,11 @@ export default function DoctorDashboard() {
             </div>
           </div>
 
-          {/* Select Left / Right Image thumbnails */}
+          {/* Select left / right visit to compare */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div>
               <p className="text-sm font-medium text-neutral-600 mb-3">
-                Select Left Image
+                Select left visit
               </p>
               <div className="flex gap-3">
                 {TIMEPOINTS.map((tp) => (
@@ -289,14 +291,12 @@ export default function DoctorDashboard() {
                     onClick={() => setLeftImage(tp.id)}
                     className={`flex-1 min-w-0 rounded-xl border-2 overflow-hidden transition-colors ${
                       leftImage === tp.id
-                        ? "border-blue-500 bg-blue-50"
+                        ? "border-teal-500 bg-teal-50"
                         : "border-neutral-200 hover:border-neutral-300 bg-white"
                     }`}
                   >
                     <div className="aspect-square bg-neutral-100 flex items-center justify-center">
-                      <span className="text-neutral-400 text-xs">
-                        Lesion Image
-                      </span>
+                      <span className="text-neutral-400 text-xs">Photo</span>
                     </div>
                     <div className="p-2 text-center">
                       <p className="text-xs font-medium truncate">{tp.label}</p>
@@ -308,7 +308,7 @@ export default function DoctorDashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-neutral-600 mb-3">
-                Select Right Image
+                Select right visit
               </p>
               <div className="flex gap-3">
                 {TIMEPOINTS.map((tp) => (
@@ -318,14 +318,12 @@ export default function DoctorDashboard() {
                     onClick={() => setRightImage(tp.id)}
                     className={`flex-1 min-w-0 rounded-xl border-2 overflow-hidden transition-colors ${
                       rightImage === tp.id
-                        ? "border-blue-500 bg-blue-50"
+                        ? "border-teal-500 bg-teal-50"
                         : "border-neutral-200 hover:border-neutral-300 bg-white"
                     }`}
                   >
                     <div className="aspect-square bg-neutral-100 flex items-center justify-center">
-                      <span className="text-neutral-400 text-xs">
-                        Lesion Image
-                      </span>
+                      <span className="text-neutral-400 text-xs">Photo</span>
                     </div>
                     <div className="p-2 text-center">
                       <p className="text-xs font-medium truncate">{tp.label}</p>
@@ -386,11 +384,11 @@ export default function DoctorDashboard() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
-                className="flex-1 px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-y min-h-[100px]"
+                className="flex-1 px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-y min-h-[100px]"
               />
               <button
                 type="button"
-                className="shrink-0 px-6 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition-colors self-start"
+                className="shrink-0 px-6 py-3 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 transition-colors self-start"
               >
                 Save Notes
               </button>

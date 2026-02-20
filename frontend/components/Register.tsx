@@ -84,7 +84,7 @@ const Register = ({ onNavigateToLogin }: RegisterProps) => {
 
             <button
               type="submit"
-              className="mt-4 w-full py-3.5 bg-gradient-to-r from-blue-400 to-blue-600 text-white rounded-xl font-medium hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 hover:cursor-pointer"
+              className="mt-4 w-full py-3.5 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-xl font-medium hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 hover:cursor-pointer"
             >
               Create account
             </button>
@@ -95,7 +95,7 @@ const Register = ({ onNavigateToLogin }: RegisterProps) => {
               Already have an account?{' '}
               <button
                 onClick={onNavigateToLogin}
-                className="text-blue-600 font-medium hover:text-blue-700 transition-colors"
+                className="text-teal-600 font-medium hover:text-teal-700 transition-colors"
               >
                 Log in
               </button>
