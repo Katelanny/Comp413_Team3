@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState } from 'react'
 import { User, Stethoscope } from 'lucide-react'
 import Logo from './Logo'
@@ -73,6 +74,14 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
                         >
                             Log in
                         </button>
+                        <p className="mt-6 text-center text-sm text-neutral-500">
+                            <Link
+                                href="/admin"
+                                className="text-teal-600 font-medium hover:text-teal-700 transition-colors"
+                            >
+                                System admin
+                            </Link>
+                        </p>
                     </form>
                 </div>
             </div>
