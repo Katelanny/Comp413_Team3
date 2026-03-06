@@ -1,5 +1,5 @@
 "use client";
-
+import Link from 'next/link'
 import React, { useState } from "react";
 import Logo from "@/components/Logo";
 import {
@@ -68,12 +68,10 @@ export default function DoctorDashboard() {
         <div className="flex items-center gap-3 text-neutral-600">
           <span className="font-medium">Dr. Amanda Richards</span>
           <span className="text-sm">Dermatology</span>
-          <button
-            type="button"
-            className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors"
-            aria-label="Menu"
-          >
-            <ChevronRight size={20} />
+          <button type="button" className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors" aria-label="Menu">
+            <Link href="/" className="text-teal-600 font-medium hover:text-teal-700 transition-colors" >
+              Logout
+            </Link>
           </button>
         </div>
       </header>
@@ -150,10 +148,7 @@ export default function DoctorDashboard() {
             <div className="flex flex-wrap gap-2">
               {[
                 { icon: GitCompare, label: "Compare" },
-                { icon: History, label: "Timeline" },
-                { icon: LayoutGrid, label: "Grid" },
-                { icon: Download, label: "Export" },
-                { icon: Printer, label: "Print" },
+                { icon: History, label: "Timeline" }
               ].map(({ icon: Icon, label }) => (
                 <button
                   key={label}

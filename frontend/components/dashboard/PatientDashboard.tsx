@@ -1,5 +1,5 @@
 "use client";
-
+import Link from 'next/link'
 import React, { useState } from "react";
 import Logo from "@/components/Logo";
 import {
@@ -45,12 +45,10 @@ export default function PatientDashboard() {
             <p className="font-medium text-neutral-900">Sarah Johnson</p>
             <p className="text-sm text-neutral-500">Patient Portal</p>
           </div>
-          <button
-            type="button"
-            className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors"
-            aria-label="Menu"
-          >
-            <ChevronRight size={20} />
+          <button type="button" className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors" aria-label="Menu"> 
+            <Link href="/" className="text-teal-600 font-medium hover:text-teal-700 transition-colors" >
+              Logout
+            </Link>
           </button>
         </div>
       </header>
@@ -136,13 +134,6 @@ export default function PatientDashboard() {
               >
                 <History size={16} />
                 Timeline
-              </button>
-              <button
-                type="button"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-colors"
-              >
-                <Download size={16} />
-                Download
               </button>
             </div>
           </div>
