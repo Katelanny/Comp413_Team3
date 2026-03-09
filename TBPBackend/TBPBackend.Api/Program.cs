@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TBPBackend.Api.Data;
-using System.Data.SQLite;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -18,6 +17,9 @@ builder.Services.AddControllers();
 
 // We want to initialize swagger
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
 builder.Services.AddSwaggerGen(options =>
@@ -44,15 +46,6 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-});
-
-var connection = new SQLiteConnection("DataSource=:memory:");
-connection.Open();
-
-// setting the application db to be the context we define
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    options.UseSqlite(connection);
 });
 
 // Adding the sign in methods and stuff
@@ -98,12 +91,8 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    // foreach (var role in new[] { "ADMIN", "USER" })
-    //     if (!await roleManager.RoleExistsAsync(role))
-    //         await roleManager.CreateAsync(new IdentityRole(role));
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 // actualling using the swagger middleware

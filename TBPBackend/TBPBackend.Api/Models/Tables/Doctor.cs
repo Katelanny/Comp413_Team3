@@ -8,6 +8,15 @@ public class Doctor
     public long Id { get; set; }
 
     [Required]
+    public string FirstName { get; set; } = null!;
+
+    [Required]
+    public string LastName { get; set; } = null!;
+
+    [Required]
+    public string Email { get; set; } = null!;
+
+    [Required]
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     [Required]
