@@ -1,25 +1,15 @@
 "use client";
-import Link from 'next/link'
-import React, { useState } from "react";
+import Link from "next/link";
+import React, { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
 import {
   Search,
-  ChevronRight,
   GitCompare,
   History,
-  LayoutGrid,
-  Download,
-  Printer,
   ZoomIn,
   Pencil,
   User,
 } from "lucide-react";
-//hard coded temporarily
-const PATIENTS = [
-  { id: "1", name: "Steven Lesley", mrn: "12345", lastVisit: "2026-01-28" },
-  { id: "2", name: "Michael Randolph", mrn: "12346", lastVisit: "2026-01-25" },
-  { id: "3", name: "John Doe", mrn: "12347", lastVisit: "2026-01-20" },
-];
 
 const TIMEPOINTS = [
   { id: "baseline", label: "Baseline", date: "2025-08-15" },
@@ -42,24 +32,89 @@ const RIGHT_METRICS = {
 };
 
 export default function DoctorDashboard() {
-  const [selectedPatient, setSelectedPatient] = useState(PATIENTS[0]);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [leftImage, setLeftImage] = useState("baseline");
   const [rightImage, setRightImage] = useState("6m");
   const [notes, setNotes] = useState("");
 
-  const filteredPatients = PATIENTS.filter(
+
+ useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5023/api/patient", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch patients");
+
+        const data = await res.json();
+        console.log("Patients:", data);
+        const formatted = data.map((p: any) => ({
+          id: p.id.toString(),
+          name: `${p.firstName ?? ""} ${p.lastName ?? ""}`,
+          mrn: p.id,
+          lastVisit: p.lastLoginAtUtc
+            ? p.lastLoginAtUtc.split("T")[0]
+            : "N/A",
+          email: p.email,
+          phone: p.phone,
+          gender: p.gender,
+          dob: p.dateOfBirth,
+          hasAccess: p.hasAccessToDiagnosis,
+        }));
+
+        setPatients(formatted);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchPatients();
+ }, []);
+
+ useEffect(() => {
+    if (patients.length > 0) {
+      setSelectedPatient(patients[0]);
+    }
+  }, [patients]);
+
+  const filteredPatients = patients.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.mrn.includes(searchQuery)
+      p.mrn.toString().includes(searchQuery)
   );
 
-  const leftTimepoint = TIMEPOINTS.find((t) => t.id === leftImage)!;
-  const rightTimepoint = TIMEPOINTS.find((t) => t.id === rightImage)!;
+  const handleLogout = async () => {
+  try {
+    const token = localStorage.getItem("token");
 
-  return (
-    <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
-      {/* Header */}
+    await fetch("http://localhost:5023/api/account/logout", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "accept": "*/*",
+      },
+    });
+
+  } catch (err) {
+    console.error("Logout error:", err);
+  } finally {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  }
+};
+
+ const leftTimepoint = TIMEPOINTS.find((t) => t.id === leftImage)!;
+ const rightTimepoint = TIMEPOINTS.find((t) => t.id === rightImage)!;
+
+ return (
+  <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
+    {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-neutral-200">
         <div className="flex items-center gap-4">
           <Logo />
@@ -67,11 +122,8 @@ export default function DoctorDashboard() {
         </div>
         <div className="flex items-center gap-3 text-neutral-600">
           <span className="font-medium">Dr. Amanda Richards</span>
-          <span className="text-sm">Dermatology</span>
-          <button type="button" className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors" aria-label="Menu">
-            <Link href="/" className="text-teal-600 font-medium hover:text-teal-700 transition-colors" >
-              Logout
-            </Link>
+          <button type="button" onClick={handleLogout} className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors text-teal-600 font-medium">
+            Logout
           </button>
         </div>
       </header>
@@ -81,16 +133,13 @@ export default function DoctorDashboard() {
         <aside className="w-80 flex flex-col bg-white border-r border-neutral-200 overflow-hidden">
           <div className="p-4 border-b border-neutral-100">
             <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-                size={18}
-              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
               <input
                 type="text"
                 placeholder="Search patients..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm"
               />
             </div>
           </div>
@@ -98,32 +147,19 @@ export default function DoctorDashboard() {
             {filteredPatients.map((patient) => (
               <li key={patient.id}>
                 <button
-                  type="button"
                   onClick={() => setSelectedPatient(patient)}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors ${
-                    selectedPatient.id === patient.id
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl ${
+                    selectedPatient?.id === patient.id
                       ? "bg-teal-600 text-white"
-                      : "hover:bg-neutral-50 text-neutral-700"
+                      : "hover:bg-neutral-50"
                   }`}
                 >
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                      selectedPatient.id === patient.id
-                        ? "bg-white/20"
-                        : "bg-neutral-200"
-                    }`}
-                  >
-                    <User size={20} className={selectedPatient.id === patient.id ? "text-white" : "text-neutral-500"} />
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-neutral-200">
+                    <User size={20} />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{patient.name}</p>
-                    <p
-                      className={`text-sm truncate ${
-                        selectedPatient.id === patient.id
-                          ? "text-teal-100"
-                          : "text-neutral-500"
-                      }`}
-                    >
+                  <div className="flex-1">
+                    <p className="font-medium">{patient.name}</p>
+                    <p className="text-sm">
                       MRN: {patient.mrn} · Last: {patient.lastVisit}
                     </p>
                   </div>
@@ -135,31 +171,20 @@ export default function DoctorDashboard() {
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-6">
+          {selectedPatient && (
+          <>
           {/* Patient info bar */}
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-semibold text-neutral-900">
-                {selectedPatient.name}
-              </h1>
-              <p className="text-neutral-500 text-sm mt-0.5">
-                MRN: {selectedPatient.mrn} | DOB: 05/14/1978
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { icon: GitCompare, label: "Compare" },
-                { icon: History, label: "Timeline" }
-              ].map(({ icon: Icon, label }) => (
-                <button
-                  key={label}
-                  type="button"
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
-                >
-                  <Icon size={16} />
-                  {label}
-                </button>
-              ))}
-            </div>
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold">
+              {selectedPatient.name}
+            </h1>
+            <p className="text-neutral-500 text-sm mt-0.5">
+                MRN: {selectedPatient.mrn} | DOB:{selectedPatient.dob ?? "N/A"} | Email: {selectedPatient.email ?? "N/A"} | Phone: {selectedPatient.phone ?? "N/A"} | Gender: {selectedPatient.gender ?? "N/A"}
+            </p>
+            <p>
+              Diagnosis Access:{" "}
+              {selectedPatient.hasAccess ? "Yes" : "No"}
+            </p>
           </div>
 
           {/* Comparison: body photos over time; zoom to focus on a lesion */}
@@ -330,44 +355,6 @@ export default function DoctorDashboard() {
             </div>
           </div>
 
-          {/* Comparison Analysis */}
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6 mb-6">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-4">
-              Comparison Analysis
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <p className="text-2xl font-semibold text-green-600">
-                  -12.5%
-                </p>
-                <p className="text-sm text-neutral-500 mt-0.5">
-                  Size Change
-                </p>
-                <p className="text-xs text-neutral-400">
-                  Between selected timepoints
-                </p>
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-neutral-700">
-                  Stable
-                </p>
-                <p className="text-sm text-neutral-500 mt-0.5">
-                  Color Change
-                </p>
-                <p className="text-xs text-neutral-400">
-                  No significant change
-                </p>
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-red-600">+5%</p>
-                <p className="text-sm text-neutral-500 mt-0.5">
-                  Border Irregularity
-                </p>
-                <p className="text-xs text-neutral-400">Slight increase</p>
-              </div>
-            </div>
-          </div>
-
           {/* Clinical Notes */}
           <div className="bg-white rounded-2xl border border-neutral-200 p-6">
             <h3 className="text-lg font-semibold text-neutral-900 mb-4">
@@ -389,8 +376,10 @@ export default function DoctorDashboard() {
               </button>
             </div>
           </div>
+          </>
+          )}
         </main>
-      </div>
-    </div>
-  );
+     </div>
+  </div>
+ );
 }

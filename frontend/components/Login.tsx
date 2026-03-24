@@ -33,7 +33,6 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
             }
             const data = await res.json();
             localStorage.setItem('token', data.token);
-            localStorage.setItem('role', userType);
             window.location.href = userType === 'doctor'
                 ? '/doctor'
                 : '/patient';
