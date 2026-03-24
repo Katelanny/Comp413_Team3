@@ -24,23 +24,19 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
         try {
             const res = await fetch('http://localhost:5023/api/account/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username,
-                    password
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
             });
 
             if (!res.ok) {
                 throw new Error('Invalid login');
             }
             const data = await res.json();
-            console.log('Login success:', data);
-
-            // If backend returns token:
-            // localStorage.setItem('token', data.token);
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('role', userType);
+            window.location.href = userType === 'doctor'
+                ? '/doctor'
+                : '/patient';
         } catch (err) {
             console.error(err);
             setError('Login failed. Check your credentials.');
