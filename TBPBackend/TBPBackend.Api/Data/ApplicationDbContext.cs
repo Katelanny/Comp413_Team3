@@ -19,4 +19,5 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     public DbSet<Doctor> Doctors { get; set; } = null!;
     public DbSet<Admin> Admins { get; set; } = null!;
     public DbSet<Visits> Visits { get; set; } = null!;
+    public DbSet<UserImage> UserImages { get; set; } = null!;
 }
