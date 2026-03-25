@@ -38,7 +38,7 @@ export default function DoctorDashboard() {
   const [leftImage, setLeftImage] = useState("baseline");
   const [rightImage, setRightImage] = useState("6m");
   const [notes, setNotes] = useState("");
-
+  const [doctor, setDoctor] = useState<any>(null);
 
  useEffect(() => {
     const fetchPatients = async () => {
@@ -83,6 +83,32 @@ export default function DoctorDashboard() {
     }
   }, [patients]);
 
+  useEffect(() => {
+  const fetchDoctor = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5023/api/doctor", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          accept: "text/plain",
+        },
+      });
+      if (!res.ok) throw new Error("Failed to fetch doctor");
+      const data = await res.json();
+      console.log("Doctor:", data);
+
+      if (data.length > 0) {
+        setDoctor(data[0]);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchDoctor();
+}, []);
+
   const filteredPatients = patients.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -121,7 +147,11 @@ export default function DoctorDashboard() {
           <span className="text-xl font-medium">Doctor Dashboard</span>
         </div>
         <div className="flex items-center gap-3 text-neutral-600">
-          <span className="font-medium">Dr. Amanda Richards</span>
+          <span className="font-medium">
+            {doctor
+              ? `Dr. ${doctor.firstName ?? ""} ${doctor.lastName ?? ""}`
+              : "Loading..."}
+          </span>          
           <button type="button" onClick={handleLogout} className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors text-teal-600 font-medium">
             Logout
           </button>
