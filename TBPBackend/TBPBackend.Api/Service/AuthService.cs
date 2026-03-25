@@ -41,7 +41,7 @@ public class AuthService : IAuthService
         // If it failed, we want to drill that up
         if (!res.Success)
         {
-            return ServiceResponse.Fail("Something went brutally wrong. Failed on creation.");
+            return ServiceResponse.Fail(res.Message ?? "Failed on creation.");
         }
         // TODO: Make sure to insert roles. Right now they are all users so its fine
         var accessToken = _tokenService.CreateAccessToken(user);

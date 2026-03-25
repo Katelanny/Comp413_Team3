@@ -51,7 +51,7 @@ public class AccountController : ControllerBase
         // Creating the user
         var user = await _authService.Register(model);
         // We need to check if it was successful
-        if (!user.Success) return Problem("Something went brutally wrong. Failed on registration.");
+        if (!user.Success) return Problem(user.Message ?? "Failed on registration.");
         // Now we need to update the cookies 
         if (user.RefreshToken == null || user.CookieOptions == null)
         {

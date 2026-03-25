@@ -62,7 +62,13 @@ builder.Services.AddCors(options =>
 
 // Adding the sign in methods and stuff
 builder.Services
-    .AddIdentity<AppUser, IdentityRole>()
+    .AddIdentity<AppUser, IdentityRole>(options =>
+    {
+        options.Password.RequireDigit = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
+    })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Now we are going to configure the authentication schemes
@@ -97,6 +103,10 @@ builder.Services.AddScoped<IAccountRepo, AccountRepo>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<IImageRepository, ImageRepository>();
+
+builder.Services.AddScoped<IImageService, ImageService>();
 
 
 var app = builder.Build();

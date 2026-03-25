@@ -49,7 +49,8 @@ public class AccountRepo : IAccountRepo
         var createRes = await _userManager.CreateAsync(user, model.Password);
         if (!createRes.Succeeded)
         {
-            return new DbResponse { Success = false, Message = "Something went wrong and we couldnt store user" };
+            var errors = string.Join("; ", createRes.Errors.Select(e => e.Description));
+            return new DbResponse { Success = false, Message = $"Identity errors: {errors}" };
         }
         // Going to save the refresh token
         var refreshStorageStatus = await StoreRefreshToken(user.Id, refreshTokenHash);
