@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TBPBackend.Api.Models.Tables;
 
@@ -6,6 +7,10 @@ public class Admin
 {
     [Key]
     public long Id { get; set; }
+
+    public string? AppUserId { get; set; }
+    [ForeignKey("AppUserId")]
+    public AppUser? AppUser { get; set; }
 
     [Required]
     public string FirstName { get; set; } = null!;
@@ -21,5 +26,4 @@ public class Admin
 
     [Required]
     public DateTime LastLoginAtUtc { get; set; } = DateTime.UtcNow;
-    
 }

@@ -32,11 +32,13 @@ public class TokenService : ITokenService
             new(JwtRegisteredClaimNames.GivenName, user.UserName)
         };
         
-        // Adding the roles that are passed in
-        // foreach (var role in roles)
-        // {
-        //     claims.Add(new Claim(ClaimTypes.Role, role));
-        // }
+        if (roles != null)
+        {
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+        }
         var creds = new SigningCredentials(_secretKey, SecurityAlgorithms.HmacSha512Signature);
 
         var tokenDescriptor = new SecurityTokenDescriptor

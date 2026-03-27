@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TBPBackend.Api.Models.Tables;
 
@@ -6,6 +7,10 @@ public class Patient
 {
     [Key]
     public long Id { get; set; }
+
+    public string? AppUserId { get; set; }
+    [ForeignKey("AppUserId")]
+    public AppUser? AppUser { get; set; }
 
     [Required]
     public string FirstName { get; set; } = null!;
@@ -38,4 +43,5 @@ public class Patient
     public DateTime LastLoginAtUtc { get; set; } = DateTime.UtcNow;
 
     public virtual ICollection<Visits> Visits { get; set; } = new List<Visits>();
+    public virtual ICollection<Lesion> Lesions { get; set; } = new List<Lesion>();
 }
