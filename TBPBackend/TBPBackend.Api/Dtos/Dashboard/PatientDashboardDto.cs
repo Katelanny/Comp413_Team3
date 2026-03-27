@@ -25,3 +25,12 @@ public class LesionInfoDto
     public int NumberOfLesions { get; set; }
     public DateTime DateRecorded { get; set; }
 }
+
+public class DoctorNoteDto
+{
+    public long VisitId { get; set; }
+    public DateTime VisitDate { get; set; }
+    public string DoctorFirstName { get; set; } = null!;
+    public string DoctorLastName { get; set; } = null!;
+    public string VisitNotes { get; set; } = null!;
+}

@@ -118,6 +118,39 @@ public class PatientController : ControllerBase
         return Ok(patient);
     }
 
+    [HttpGet("doctor-notes")]
+    [Authorize(Policy = "PatientOnly")]
+    public async Task<ActionResult<List<DoctorNoteDto>>> GetDoctorNotes()
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var patient = await _db.Patients
+            .FirstOrDefaultAsync(p => p.AppUserId == userId);
+
+        if (patient is null)
+            return NotFound(new { error = "No patient profile found for this account." });
+
+        if (!patient.HasAccessToDiagnosis)
+            return Forbid();
+
+        var doctorNotes = await _db.Visits
+            .Include(v => v.Doctor)
+            .Where(v => v.PatientId == patient.Id)
+            .OrderByDescending(v => v.VisitDate)
+            .Select(v => new DoctorNoteDto
+            {
+                VisitId = v.Id,
+                VisitDate = v.VisitDate,
+                DoctorFirstName = v.Doctor.FirstName,
+                DoctorLastName = v.Doctor.LastName,
+                VisitNotes = v.VisitNotes
+            })
+            .ToListAsync();
+
+        return Ok(doctorNotes);
+    }
+
     private string? GetUserId()
     {
         return User.FindFirstValue(JwtRegisteredClaimNames.Sub)
