@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using TBPBackend.Api.Dtos.Account;
 using TBPBackend.Api.Interfaces;
 using TBPBackend.Api.Models;
@@ -9,11 +10,13 @@ public class AuthService : IAuthService
 {
     private readonly IAccountRepo _accountRepo;
     private readonly ITokenService _tokenService;
+    private readonly UserManager<AppUser> _userManager;
     
-    public AuthService(IAccountRepo accountRepo, ITokenService tokenService)
+    public AuthService(IAccountRepo accountRepo, ITokenService tokenService, UserManager<AppUser> userManager)
     {
         _accountRepo = accountRepo;
         _tokenService = tokenService;
+        _userManager = userManager;
     }
 
     public static CookieOptions PartialCookieOptions(DateTimeOffset expires) => new CookieOptions
@@ -27,25 +30,21 @@ public class AuthService : IAuthService
     
     public async Task<ServiceResponse> Register(RegisterDto dto)
     {
-        // Creating the user and passing it in
         var user = new AppUser
         {
             Email = dto.Email,
             UserName = dto.Username
         };
-        // Creating the token/token hash
         var token = _tokenService.CreateRefreshToken();
         var tokenHash = _tokenService.HashRefreshToken(token);
-        // Passing to our repo to actually store in the db
         var res = await _accountRepo.CreateUser(dto, tokenHash, user);
-        // If it failed, we want to drill that up
         if (!res.Success)
         {
             return ServiceResponse.Fail(res.Message ?? "Failed on creation.");
         }
-        // TODO: Make sure to insert roles. Right now they are all users so its fine
-        var accessToken = _tokenService.CreateAccessToken(user);
-        // Now we know it is already stored, and we need to 
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var accessToken = _tokenService.CreateAccessToken(user, roles);
         return ServiceResponse.Ok
         (
             token, PartialCookieOptions(DateTimeOffset.UtcNow.AddDays(7)), accessToken
@@ -62,7 +61,8 @@ public class AuthService : IAuthService
             return ServiceResponse.Fail(loginRes.Message ?? "Something went wrong logging in");
         }
         
-        var accessToken = _tokenService.CreateAccessToken(loginRes.User);
+        var roles = await _userManager.GetRolesAsync(loginRes.User);
+        var accessToken = _tokenService.CreateAccessToken(loginRes.User, roles);
         return ServiceResponse.Ok
         (
             token, PartialCookieOptions(DateTimeOffset.UtcNow.AddDays(7)), accessToken
@@ -71,25 +71,22 @@ public class AuthService : IAuthService
 
     public async Task<ServiceResponse> CheckRefreshToken(string refreshToken)
     {
-        
         var refreshHash = _tokenService.HashRefreshToken(refreshToken);
         var isTokenHash = await _accountRepo.CheckTokenHash(refreshHash);
-        // We want to only proceed if we found a match and have the user in hand
         if (!isTokenHash.IsMatch || isTokenHash.User == null)
         {
             return ServiceResponse.Fail("Token must have expired or we couldn't load your profile.");
         }
-        // Now we want to create a new access and give it to them
-        var accessToken = _tokenService.CreateAccessToken(isTokenHash.User);
+
+        var roles = await _userManager.GetRolesAsync(isTokenHash.User);
+        var accessToken = _tokenService.CreateAccessToken(isTokenHash.User, roles);
         return ServiceResponse.Ok(
                 refreshToken, PartialCookieOptions(DateTimeOffset.UtcNow), accessToken);
     }
     
     public async Task<bool> Logout(string refreshHash)
     {
-        // Here we are going to do modifications into the db on the repo
         var status = await _accountRepo.Logout(refreshHash);
         return status.Success;
     }
-    
 }

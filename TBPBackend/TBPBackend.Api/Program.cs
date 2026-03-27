@@ -54,7 +54,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:3000")
+            .WithOrigins("http://localhost:3000", "*")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -94,8 +94,15 @@ builder.Services.AddAuthentication(options =>
             System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"] ?? throw new InvalidOperationException())
         ),
         ClockSkew = TimeSpan.FromMinutes(2),
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
     };
 });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("PatientOnly", p => p.RequireRole("Patient"))
+    .AddPolicy("DoctorOnly",  p => p.RequireRole("Doctor"))
+    .AddPolicy("AdminOnly",   p => p.RequireRole("Admin"))
+    .AddPolicy("MedicalStaff", p => p.RequireRole("Doctor", "Admin"));
 
 // adding the services
 builder.Services.AddScoped<IAccountRepo, AccountRepo>();
@@ -113,8 +120,10 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var services = scope.ServiceProvider;
+    var db = services.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
+    await SeedData.InitializeAsync(services);
 }
 
 // actualling using the swagger middleware
