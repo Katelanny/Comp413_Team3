@@ -6,18 +6,18 @@ PredictRequest:
   type: object
   required:
     - patient_id
-    - images_by_timepoints
+    - images_by_times
 
   properties:
     patient_id:
       type: string
 
-    images_by_timepoints:
+    images_by_times:
       type: array
-      description: Each index corresponds to a timepoint
+      description: Each index corresponds to a time
       items:
         type: array
-        description: List of image URLs at a timepoint
+        description: List of image URLs at a time
         items:
           type: string
           format: uri
@@ -26,18 +26,18 @@ PredictResponse:
   type: object
   required:
     - patient_id
-    - predictions_by_timepoints
+    - predictions_by_times
 
   properties:
     patient_id:
       type: string
     
-    predictions_by_timepoints:
+    predictions_by_times:
         type: array
-        description: Each index corresponds to a timepoint
+        description: Each index corresponds to a time
         items:
             type: array
-            description: List of image predictions at a timepoint
+            description: List of image predictions at a time
             items: 
                 type: object
                 required: 
@@ -63,16 +63,16 @@ PredictResponse:
                         items:
                             type: object
                             required:
-                            - id
-                            - box
-                            - score
-                            - polygon_mask
-                            - anatomical_site
+                                - id
+                                - box
+                                - score
+                                - polygon_mask
+                                - anatomical_site
 
                             properties:
                             lesion_id:
                                 type: string
-                                description: "{patient_id}_{timestamp}_{index}"
+                                description: "{patient_id}_{time}_{index}"
 
                             box:
                                 type: object
@@ -106,13 +106,13 @@ PredictResponse:
                             prev_lesion_id:
                                 type: string
                                 nullable: true
-                                description: Lesion ID from the previous timepoint (t-1) that matches this lesion; null if no match exists
+                                description: Lesion ID from the previous time (t-1) that matches this lesion; null if no match exists
                             
                             relative_size_change:
                                 type: number
                                 format: float
                                 nullable: true
-                                description: Relative change in lesion size compared to previous timepoint (t-1). 
+                                description: Relative change in lesion size compared to previous time (t-1). 
                                 Example: 0.2 = +20% growth, -0.1 = -10% shrinkage. 
                                 Null if no previous matched lesion exists.
 ```
