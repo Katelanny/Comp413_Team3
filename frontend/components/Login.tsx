@@ -32,8 +32,18 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
                 throw new Error('Invalid login');
             }
             const data = await res.json();
+            console.log("Login response:", data);
+
+            const backendRole = data.role?.toLowerCase(); 
+            const selectedRole = userType.toLowerCase();
+
+            if (backendRole !== selectedRole) {
+                setError(`You are registered as a ${backendRole}, not a ${selectedRole}.`);
+                return;
+            }
+
             localStorage.setItem('token', data.token);
-            window.location.href = userType === 'doctor'
+            window.location.href = backendRole === 'doctor'
                 ? '/doctor'
                 : '/patient';
         } catch (err) {
