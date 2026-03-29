@@ -15,7 +15,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Login",
+  title: "App",
   description: "Login to your account",
 };
 
