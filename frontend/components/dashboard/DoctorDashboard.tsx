@@ -4,18 +4,10 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import Logo from "@/components/Logo";
 import {
   Search,
-  ZoomIn,
   Minus,
   Plus,
-  Pencil,
   User,
 } from "lucide-react";
-
-const TIMEPOINTS = [
-  { id: "baseline", label: "Baseline", date: "2025-08-15" },
-  { id: "3m", label: "3 months", date: "2025-11-20" },
-  { id: "6m", label: "6 months", date: "2026-02-01" },
-];
 
 export default function DoctorDashboard() {
   const [patients, setPatients] = useState<any[]>([]);
@@ -28,8 +20,16 @@ export default function DoctorDashboard() {
   const [rightIdx, setRightIdx] = useState(1);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [lesions, setLesions] = useState<any[]>([]);
-  const leftMetrics = lesions[leftIdx] ?? null;
-  const rightMetrics = lesions[rightIdx] ?? null;
+  
+  function findLesionForImage(img: any, lesions: any[]) {
+    return lesions.find(
+      (l) =>
+        new Date(l.dateRecorded).toDateString() ===
+        new Date(img.dateTaken).toDateString()
+    );
+  }
+    const leftMetrics = findLesionForImage(images[leftIdx], lesions);
+  const rightMetrics = findLesionForImage(images[rightIdx], lesions);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -92,11 +92,17 @@ export default function DoctorDashboard() {
         );
         if (!res.ok) throw new Error("Failed to fetch patient");
         const data = await res.json();
-        const imgs = (data.images || []).map((img: any) => ({
-          fileName: img.fileName,
-          signedUrl: img.url,
-          dateTaken: img.dateTaken,
-        }));
+        const imgs = (data.images || [])
+          .map((img: any) => ({
+            fileName: img.fileName,
+            signedUrl: img.url,
+            dateTaken: img.dateTaken,
+          }))
+          .sort(
+            (a: any, b: any) =>
+              new Date(a.dateTaken).getTime() -
+              new Date(b.dateTaken).getTime()
+          );
 
         setImages(imgs);
         setLesions(data.lesions || []);
@@ -433,11 +439,11 @@ export default function DoctorDashboard() {
                     </div>
                   )}
                   <div className="text-center">
-                    <p className="text-neutral-500">Site: {rightMetrics?.anatomicalSite ?? "-"}</p>
-                    <p className="text-neutral-500">Diagnosis: {rightMetrics?.diagnosis ?? "-"}</p>
-                    <p className="text-neutral-500">Number: {rightMetrics?.numberOfLesions ?? "-"}</p>
-                    <p className="text-neutral-500">Date: {rightMetrics
-                        ? new Date(rightMetrics.dateRecorded).toLocaleDateString()
+                    <p className="text-neutral-500">Site: {leftMetrics?.anatomicalSite ?? "-"}</p>
+                    <p className="text-neutral-500">Diagnosis: {leftMetrics?.diagnosis ?? "-"}</p>
+                    <p className="text-neutral-500">Number: {leftMetrics?.numberOfLesions ?? "-"}</p>
+                    <p className="text-neutral-500">Date: {leftMetrics
+                        ? new Date(leftMetrics.dateRecorded).toLocaleDateString()
                         : "-"}</p>
                   </div>
                 </div>
