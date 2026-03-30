@@ -13,17 +13,18 @@ import {
 } from "lucide-react";
 
 type PatientInfo = {
-  id: number;
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  gender: string;
-  dateOfBirth: string;
   hasAccessToDiagnosis: boolean;
-  createdAtUtc: string;
-  updatedAtUtc: string;
-  lastLoginAtUtc: string;
+};
+
+type LesionInfo = {
+  id: number;
+  anatomicalSite: string;
+  diagnosis: string | null;
+  numberOfLesions: number;
+  dateRecorded: string;
 };
 
 type ImageRow = {
@@ -31,20 +32,6 @@ type ImageRow = {
   signedUrl: string;
 };
 
-/** Read email + username */
-function jwtEmailAndUsername(token: string): {
-  email?: string;
-  given_name?: string;
-} {
-  try {
-    const part = token.split(".")[1];
-    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
-    return JSON.parse(atob(padded)) as { email?: string; given_name?: string };
-  } catch {
-    return {};
-  }
-}
 
 function formatDate(iso: string) {
   try {
@@ -59,11 +46,7 @@ function formatDate(iso: string) {
 }
 
 
-function normalizeImagesFromApi(imgJson: unknown): ImageRow[] {
-  if (!imgJson || typeof imgJson !== "object") return [];
-  const o = imgJson as Record<string, unknown>;
-  const raw = o.images;
-  if (!Array.isArray(raw)) return [];
+function normalizeImages(raw: unknown[]): ImageRow[] {
   const out: ImageRow[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
@@ -290,95 +273,66 @@ export default function PatientDashboard() {
   const [viewMode, setViewMode] = useState<"compare" | "timeline">("compare");
   const [patient, setPatient] = useState<PatientInfo | null>(null);
   const [images, setImages] = useState<ImageRow[]>([]);
+  const [lesions, setLesions] = useState<LesionInfo[]>([]);
   const [leftIdx, setLeftIdx] = useState(0);
   const [rightIdx, setRightIdx] = useState(1);
   const [timelineIdx, setTimelineIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [imagesEmptyMessage, setImagesEmptyMessage] = useState<string | null>(
-    null
-  );
 
   useEffect(() => {
     const loadData = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setError("Not signed in.");
-      setLoading(false);
-      return;
-    }
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Not signed in.");
+        setLoading(false);
+        return;
+      }
 
-    setError(null);
-    setImagesEmptyMessage(null);
-    setLoading(true);
+      setError(null);
+      setLoading(true);
 
-    try {
-      const authHeaders = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      } as const;
-
-      const [patientsRes, imgRes] = await Promise.all([
-        fetch("http://localhost:5023/api/patient", {
+      try {
+        const res = await fetch("http://localhost:5023/api/patient/dashboard", {
           method: "GET",
-          headers: authHeaders,
-        }),
-        fetch("http://localhost:5023/api/images", {
-          method: "POST",
-          headers: authHeaders,
-          body: "{}",
-        }),
-      ]);
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      if (!patientsRes.ok) throw new Error("Could not load patient list.");
+        if (res.status === 401) throw new Error("Session expired. Please log in again.");
+        if (!res.ok) throw new Error("Could not load your dashboard.");
 
-      const patients: PatientInfo[] = await patientsRes.json();
-      const { email, given_name } = jwtEmailAndUsername(token);
-      const me = patients.find((p) => {
-        const row = p.email?.toLowerCase() ?? "";
-        return (
-          (email && row === email.toLowerCase()) ||
-          (given_name && row === given_name.toLowerCase())
-        );
-      });
-      if (!me) {
-        setPatient(null);
-        setError(
-          "No patient row matches your account email or username in the Patients table."
-        );
-      } else {
-        setPatient(me);
+        const data = await res.json() as Record<string, unknown>;
+
+        setPatient({
+          firstName: String(data.firstName ?? ""),
+          lastName: String(data.lastName ?? ""),
+          email: String(data.email ?? ""),
+          hasAccessToDiagnosis: Boolean(data.hasAccessToDiagnosis),
+        });
+
+        const rawImages = Array.isArray(data.images) ? data.images : [];
+        const list = normalizeImages(rawImages);
+        setImages(list);
+
+        const rawLesions = Array.isArray(data.lesions) ? data.lesions : [];
+        setLesions(rawLesions as LesionInfo[]);
+
+        if (list.length >= 2) {
+          setLeftIdx(0);
+          setRightIdx(1);
+        } else {
+          setLeftIdx(0);
+          setRightIdx(0);
+        }
+        setTimelineIdx(0);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load data.");
+      } finally {
+        setLoading(false);
       }
-
-      if (!imgRes.ok) {
-        if (imgRes.status === 401) throw new Error("Session expired. Please log in again.");
-        throw new Error("Could not load your photos.");
-      }
-
-      const imgJson = (await imgRes.json()) as Record<string, unknown>;
-      const list = normalizeImagesFromApi(imgJson);
-      setImages(list);
-
-      const apiMsg =
-        typeof imgJson.message === "string" ? imgJson.message : null;
-      setImagesEmptyMessage(list.length === 0 ? apiMsg : null);
-
-      if (list.length >= 2) {
-        setLeftIdx(0);
-        setRightIdx(1);
-      } else if (list.length === 1) {
-        setLeftIdx(0);
-        setRightIdx(0);
-      } else {
-        setLeftIdx(0);
-        setRightIdx(0);
-      }
-      setTimelineIdx(0);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load data.");
-    } finally {
-      setLoading(false);
-    }
     };
     loadData();
   }, []);
@@ -480,18 +434,15 @@ export default function PatientDashboard() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div>
-              <p className="text-neutral-500 mb-0.5">Regions</p>
+              <p className="text-neutral-500 mb-0.5">Email</p>
               <p className="font-medium text-neutral-900">
-                {patient ? "—" : loading ? "…" : "—"}
-              </p>
-              <p className="text-xs text-neutral-400 mt-1">
-                Region labels are added by your care team when available.
+                {patient ? patient.email : loading ? "…" : "—"}
               </p>
             </div>
             <div>
-              <p className="text-neutral-500 mb-0.5">First visit (record)</p>
+              <p className="text-neutral-500 mb-0.5">Tracked lesions</p>
               <p className="font-medium text-neutral-900">
-                {patient ? formatDate(patient.createdAtUtc) : loading ? "…" : "—"}
+                {loading ? "…" : `${lesions.length}`}
               </p>
             </div>
             <div>
@@ -503,7 +454,7 @@ export default function PatientDashboard() {
           </div>
           {patient && (
             <p className="text-sm text-neutral-600 mt-4">
-              DOB: {patient.dateOfBirth} · Diagnosis access:{" "}
+              Diagnosis access:{" "}
               {patient.hasAccessToDiagnosis ? "Yes" : "No"}
             </p>
           )}
@@ -553,8 +504,7 @@ export default function PatientDashboard() {
           <div className="p-6 space-y-6">
             {images.length === 0 && !loading && (
               <p className="text-sm text-neutral-500">
-                {imagesEmptyMessage ??
-                  "No photos are linked to your account yet. Your care team will add images after your visits."}
+                {"No photos are linked to your account yet. Your care team will add images after your visits."}
               </p>
             )}
 
@@ -794,16 +744,30 @@ export default function PatientDashboard() {
 
         <section className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
           <h2 className="text-lg font-bold text-neutral-900 mb-4">
-            What your doctor says
+            Tracked Lesions
           </h2>
-          <div className="space-y-4">
+          {lesions.length === 0 && !loading ? (
             <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4">
               <p className="text-neutral-600 text-sm">
-                Clinical notes and guidance from your provider will show here
-                when they are added to your record.
+                No lesion records yet. Your care team will add entries after each visit.
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {lesions.map((l) => (
+                <div key={l.id} className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm">
+                  <div className="flex flex-wrap gap-x-6 gap-y-1">
+                    <span><span className="text-neutral-500">Site:</span> <span className="font-medium">{l.anatomicalSite}</span></span>
+                    <span><span className="text-neutral-500">Count:</span> <span className="font-medium">{l.numberOfLesions}</span></span>
+                    {l.diagnosis && (
+                      <span><span className="text-neutral-500">Diagnosis:</span> <span className="font-medium">{l.diagnosis}</span></span>
+                    )}
+                    <span><span className="text-neutral-500">Recorded:</span> <span className="font-medium">{formatDate(l.dateRecorded)}</span></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>
