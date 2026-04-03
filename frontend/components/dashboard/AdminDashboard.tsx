@@ -155,6 +155,25 @@ export default function AdminDashboard() {
     )
     .slice(0, 5);
 
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch("http://localhost:5023/api/account/logout", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          accept: "*/*",
+        },
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.removeItem("token");
+      window.location.href = "/"; 
+    }
+  };
+
   const displayName = me
     ? `${me.firstName} ${me.lastName}`.trim()
     : loading
@@ -178,13 +197,13 @@ export default function AdminDashboard() {
               <p className="text-neutral-500 text-xs">{me.email}</p>
             )}
           </div>
-          <Link
-            href="/"
+          <button
+            onClick={handleLogout}
             className="flex items-center gap-2 text-sm text-neutral-600 hover:text-teal-600 transition-colors"
           >
             <ArrowLeft size={16} />
-            Back to login
-          </Link>
+            Logout
+          </button>
         </div>
       </header>
 
