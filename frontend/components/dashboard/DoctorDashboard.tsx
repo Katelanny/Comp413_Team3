@@ -20,6 +20,7 @@ export default function DoctorDashboard() {
   const [rightIdx, setRightIdx] = useState(1);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [lesions, setLesions] = useState<any[]>([]);
+  const [patientDetails, setPatientDetails] = useState<any>(null);
   
   function findLesionForImage(img: any, lesions: any[]) {
     return lesions.find(
@@ -80,18 +81,27 @@ export default function DoctorDashboard() {
       setImagesLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(
-          `http://localhost:5023/api/doctor/patients/${selectedPatient.id}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              accept: "text/plain",
-            },
-          }
-        );
-        if (!res.ok) throw new Error("Failed to fetch patient");
-        const data = await res.json();
+        const [detailsRes, patientRes] = await Promise.all([
+          fetch(
+            `http://localhost:5023/api/doctor/patients/${selectedPatient.id}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
+          fetch(
+            `http://localhost:5023/api/patient/${selectedPatient.id}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
+        ]);
+
+        if (!detailsRes.ok) throw new Error("Failed to fetch patient data");
+        if (!patientRes.ok) throw new Error("Failed to fetch patient profile");
+        const data = await detailsRes.json();
+        const patientProfile = await patientRes.json();
+        setPatientDetails(patientProfile); 
+
         const imgs = (data.images || [])
           .map((img: any) => ({
             fileName: img.fileName,
@@ -108,8 +118,8 @@ export default function DoctorDashboard() {
         setLesions(data.lesions || []);
 
         if (imgs.length >= 2) {
-          setLeftIdx(0);
-          setRightIdx(1);
+          setLeftIdx(imgs.length - 2);
+          setRightIdx(imgs.length - 1);
         } else if (imgs.length === 1) {
           setLeftIdx(0);
           setRightIdx(0);
@@ -244,6 +254,8 @@ export default function DoctorDashboard() {
       el.addEventListener("wheel", onWheel, { passive: false });
       return () => el.removeEventListener("wheel", onWheel);
     }, []);
+
+    
 
     return (
       <div className="relative rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200">
@@ -396,14 +408,16 @@ export default function DoctorDashboard() {
                   {selectedPatient.name}
                 </h1>
                 <p className="text-neutral-500 text-sm mt-0.5">
-                  MRN: {selectedPatient.mrn} | DOB:{" "}
-                  {selectedPatient.dob ?? "N/A"} | Email:{" "}
-                  {selectedPatient.email ?? "N/A"} | Phone:{" "}
-                  {selectedPatient.phone ?? "N/A"} | Gender:{" "}
-                  {selectedPatient.gender ?? "N/A"}
+                  DOB: {patientDetails?.dateOfBirth
+                        ? new Date(patientDetails.dateOfBirth).toLocaleDateString()
+                        : "N/A"} ||
+                  Email: {patientDetails?.email ?? "N/A"} ||
+                  Phone: {patientDetails?.phone ?? "N/A"} ||
+                  Gender: {patientDetails?.gender ?? "N/A"}
                 </p>
                 <p>
-                  Diagnosis Access: {selectedPatient.hasAccess ? "Yes" : "No"}
+                  Diagnosis Access:{" "}
+                  {patientDetails?.hasAccessToDiagnosis ? "Yes" : "No"}
                 </p>
               </div>
 
