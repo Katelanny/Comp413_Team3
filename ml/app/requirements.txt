@@ -1,8 +1,23 @@
-# API
+
 fastapi
 uvicorn[standard]
-
-# HTTP (async image downloading)
 httpx
 
+# image processing
+pillow
 numpy
+opencv-python
+
+# ML
+torch
+torchvision
+
+# =========================
+# Detectron2 (install separately - see below)
+# =========================
+# detectron2
+
+# =========================
+# Optional (recommended for robustness)
+# =========================
+python-dateutil
