@@ -110,6 +110,7 @@ PredictResponse:
                 timestamp:
                   type: string
                   format: date-time
+                
 
                 num_lesions:
                     type: integer
@@ -179,4 +180,8 @@ PredictResponse:
                             description: Relative change in lesion size compared to previous time (t-1). 
                             Example: 0.2 = +20% growth, -0.1 = -10% shrinkage. 
                             Null if no previous matched lesion exists.
+
+                error:
+                  type: string
+                  nullable: true
     ```
