@@ -1,19 +1,20 @@
+```text
 app/
-├── main.py
+├── main.py                       # App entry point & FastAPI init
 ├── api/
-│   └── routes.py
+│   └── routes.py                 # API endpoints & validation
 ├── models/
-│   ├── lesion_model.py
-│   └── pose_model.py
+│   ├── lesion_model.py           # Lesion detection wrapper
+│   └── pose_model.py             # Pose detection wrapper
 ├── pipeline/
-│   ├── pipeline.py
-│   ├── types.py
+│   ├── pipeline.py               # Workflow orchestrator
+│   ├── types.py                  # Shared data structures
 │   └── stages/
-│       ├── lesion_detection.py
-│       ├── pose_detection.py
-│       └── lesion_matching_by_time.py
-├── services/
-│   └── image_loader.py
+│       ├── lesion_detection.py    # Lesion processing logic
+│       ├── pose_detection.py      # Pose processing logic
+│       └── lesion_matching_by_time.py  # Temporal matching logic
+└── services/
+    └── image_loader.py           # Async image downloading```
 
 # Application Architecture
 
