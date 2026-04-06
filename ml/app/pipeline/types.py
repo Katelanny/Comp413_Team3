@@ -10,6 +10,7 @@ class ImageInput:
     """
     Parsed request input (after API validation).
     """
+
     url: str
     timestamp: datetime
 
@@ -19,12 +20,14 @@ class LoadedImage:
     """
     Image after downloading + decoding.
     """
+
     url: str
     timestamp: datetime
     image: np.ndarray  # H x W x C
 
 
 ### Lesion Detection Output Types
+
 
 @dataclass
 class BoundingBox:
@@ -55,27 +58,31 @@ class ImageLoadResult:
     image: Optional[np.ndarray]
     error: Optional[str] = None
 
+
 @dataclass
 class ImageError:
     url: str
     timestamp: datetime
     error: str
 
+
 @dataclass
 class LesionResult:
     """
     Output of lesion detection for a single image.
     """
+
     image_url: str
     timestamp: datetime
     lesions: List[Lesion]
 
 
 @dataclass
-class PoseResult: #TODO: update 
+class PoseResult:  # TODO: update
     """
     Output of pose detection for a single image.
     """
+
     image_url: str
     timestamp: datetime
     # Keep minimal for now; expand later if needed
@@ -84,11 +91,13 @@ class PoseResult: #TODO: update
 
 ### Final output
 
+
 @dataclass
 class ImagePrediction:
     """
     Final per-image prediction (matches API response).
     """
+
     timestamp: datetime
     input_image_url: str
     prediction_image_url: str

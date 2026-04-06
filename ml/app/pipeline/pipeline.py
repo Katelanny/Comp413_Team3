@@ -47,10 +47,10 @@ def run_pipeline(
 
     # 1. Lesion Detection
     lesion_results: List[LesionResult] = run_lesion_detection(
-            valid_image_results,
-            lesion_model,
-        )
-    
+        valid_image_results,
+        lesion_model,
+    )
+
     if not len(lesion_results):
         for img in valid_image_results:
             image_errors.append(
@@ -62,7 +62,7 @@ def run_pipeline(
             )
         return [], image_errors
 
-   # 2. Pose Detection
+    # 2. Pose Detection
     lesion_results = run_pose_detection(valid_image_results, lesion_results, pose_model)
 
     # 3. Lesion Matching by Time

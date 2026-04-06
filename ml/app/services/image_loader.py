@@ -24,6 +24,7 @@ REQUEST_TIMEOUT = 10.0  # seconds
 # Public API
 # =========================
 
+
 async def load_images(image_inputs: List[ImageInput]) -> List[ImageLoadResult]:
     """
     Downloads and decodes images concurrently.
@@ -50,6 +51,7 @@ async def load_images(image_inputs: List[ImageInput]) -> List[ImageLoadResult]:
 # =========================
 # Internal Helpers
 # =========================
+
 
 async def _load_single_image(
     client: httpx.AsyncClient,

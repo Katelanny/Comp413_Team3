@@ -181,7 +181,20 @@ PredictResponse:
                             Example: 0.2 = +20% growth, -0.1 = -10% shrinkage. 
                             Null if no previous matched lesion exists.
 
-                error:
-                  type: string
-                  nullable: true
+    errors:
+      type: array
+      description: List of images that failed processing
+      items:
+        type: object
+        required:
+          - url
+          - timestamp
+        properties:
+          url:
+            type: string
+          timestamp:
+            type: string
+            format: date-time
+          error:
+            type: string
     ```

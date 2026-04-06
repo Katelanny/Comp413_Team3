@@ -24,7 +24,9 @@ class LesionModel:
 
         self.predictor = DefaultPredictor(cfg)
 
-    def predict(self, images: List[np.ndarray], urls: List[str], timestamps: List) -> List[LesionResult]:
+    def predict(
+        self, images: List[np.ndarray], urls: List[str], timestamps: List
+    ) -> List[LesionResult]:
         """
         Run lesion detection on a batch of images.
 
@@ -58,7 +60,9 @@ class LesionModel:
         """
         Convert Detectron2 Instances → List[Lesion]
         """
-        boxes = instances.pred_boxes.tensor.numpy() if instances.has("pred_boxes") else []
+        boxes = (
+            instances.pred_boxes.tensor.numpy() if instances.has("pred_boxes") else []
+        )
         scores = instances.scores.numpy() if instances.has("scores") else []
         masks = instances.pred_masks.numpy() if instances.has("pred_masks") else []
 

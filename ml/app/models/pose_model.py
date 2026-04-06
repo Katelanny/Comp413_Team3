@@ -3,6 +3,7 @@ import numpy as np
 
 from app.pipeline.types import PoseResult
 
+
 class PoseModel:
     def __init__(self, config_path: str, weights_path: str):
         """
@@ -33,5 +34,5 @@ class PoseModel:
             List[PoseResult] aligned with input order
         """
 
-        #TODO:
+        # TODO:
         raise NotImplementedError("Pose prediction not implemented")

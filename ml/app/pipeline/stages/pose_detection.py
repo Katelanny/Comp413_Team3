@@ -36,7 +36,7 @@ def run_pose_detection(
         )
     except Exception:
         return lesion_results
-    
+
     # TODO: combine info from pose_result to fill in the anatomical site in lesion_result
 
     return lesion_results
