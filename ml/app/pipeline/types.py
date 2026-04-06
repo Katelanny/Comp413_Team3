@@ -56,6 +56,12 @@ class ImageLoadResult:
     error: Optional[str] = None
 
 @dataclass
+class ImageError:
+    url: str
+    timestamp: datetime
+    error: str
+
+@dataclass
 class LesionResult:
     """
     Output of lesion detection for a single image.
@@ -88,3 +94,4 @@ class ImagePrediction:
     prediction_image_url: str
     num_lesions: int
     lesions: List[Lesion]
+    error: Optional[str] = None
