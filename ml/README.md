@@ -14,7 +14,7 @@ app/
 │       ├── pose_detection.py      # Pose processing logic
 │       └── lesion_matching_by_time.py  # Temporal matching logic
 └── services/
-    └── image_loader.py           # Async image downloading```
+    └── image_loader.py           # Async image downloading
 ```
 
 # Application Architecture
