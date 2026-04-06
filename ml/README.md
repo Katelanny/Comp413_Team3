@@ -15,6 +15,7 @@ app/
 │       └── lesion_matching_by_time.py  # Temporal matching logic
 └── services/
     └── image_loader.py           # Async image downloading```
+```
 
 # Application Architecture
 
