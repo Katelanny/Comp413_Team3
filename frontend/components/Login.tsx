@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -9,8 +10,7 @@ interface LoginProps {
 }
 
 const Login = ({ onNavigateToRegister }: LoginProps) => {
-    const [userType, setUserType] = useState<'patient' | 'doctor'>('patient');
-
+    const [userType, setUserType] = useState<'patient' | 'doctor' | 'admin'>('patient');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -32,10 +32,24 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
                 throw new Error('Invalid login');
             }
             const data = await res.json();
+            console.log("Login response:", data);
+
+            const backendRole = data.role?.toLowerCase();
+            const selectedRole = userType.toLowerCase();
+
+            if (backendRole !== selectedRole) {
+                setError(`You are registered as a ${backendRole}, not a ${selectedRole}.`);
+                return;
+            }
+
             localStorage.setItem('token', data.token);
-            window.location.href = userType === 'doctor'
-                ? '/doctor'
-                : '/patient';
+            if (backendRole === 'doctor') {
+                window.location.href = '/doctor';
+            } else if (backendRole === 'patient') {
+                window.location.href = '/patient';
+            } else if (backendRole === 'admin') {
+                window.location.href = '/admin';
+            }
         } catch (err) {
             console.error(err);
             setError('Login failed. Check your credentials.');
@@ -68,8 +82,12 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
                     {/* User type toggle */}
                     <div className="flex bg-neutral-100 p-1 rounded-xl w-full max-w-[300px] relative">
                         <div
-                            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out ${
-                                userType === 'patient' ? 'left-1' : 'left-[50%]'
+                            className={`absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out ${
+                                userType === 'patient'
+                                    ? 'left-1'
+                                    : userType === 'doctor'
+                                    ? 'left-[33.33%]'
+                                    : 'left-[66.66%]'
                             }`}
                         />
 
@@ -96,6 +114,17 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
                         >
                             <Stethoscope size={16} />
                             Doctor
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setUserType('admin')}
+                            className={`flex-1 relative z-10 py-2 text-sm font-medium flex items-center justify-center gap-2 ${
+                                userType === 'admin'
+                                    ? 'text-neutral-900'
+                                    : 'text-neutral-500 hover:text-neutral-700'
+                            }`}
+                        >
+                            Admin
                         </button>
                     </div>
 
@@ -130,14 +159,6 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
                         >
                             {loading ? 'Logging in...' : 'Log in'}
                         </button>
-                        <p className="mt-6 text-center text-sm text-neutral-500">
-                            <Link
-                                href="/admin"
-                                className="text-teal-600 font-medium hover:text-teal-700 transition-colors"
-                            >
-                                System admin
-                            </Link>
-                        </p>
                     </form>
                 </div>
             </div>

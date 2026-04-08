@@ -45,14 +45,23 @@ public class AccountRepo : IAccountRepo
     public async Task<DbResponse> CreateUser(RegisterDto model, string refreshTokenHash, AppUser user)
     {
         if (model.Password == null) return new DbResponse { Success = false, Message = "Password is required" }; 
-        // Now we want to save the token to the db
         var createRes = await _userManager.CreateAsync(user, model.Password);
         if (!createRes.Succeeded)
         {
             var errors = string.Join("; ", createRes.Errors.Select(e => e.Description));
             return new DbResponse { Success = false, Message = $"Identity errors: {errors}" };
         }
-        // Going to save the refresh token
+
+        if (!string.IsNullOrEmpty(model.Role))
+        {
+            var roleRes = await _userManager.AddToRoleAsync(user, model.Role);
+            if (!roleRes.Succeeded)
+            {
+                var errors = string.Join("; ", roleRes.Errors.Select(e => e.Description));
+                return new DbResponse { Success = false, Message = $"Role assignment errors: {errors}" };
+            }
+        }
+
         var refreshStorageStatus = await StoreRefreshToken(user.Id, refreshTokenHash);
         if (!refreshStorageStatus) return new DbResponse { Success = false, Message = "Refresh storage did not store" };
         return new DbResponse { Success = true };
