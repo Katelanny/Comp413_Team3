@@ -11,7 +11,7 @@ class PoseModel:
             weights_path: Path to model weights
         """
         # TODO: load model (e.g., Detectron2 or other)
-        raise NotImplementedError("Pose model initialization not implemented")
+        # raise NotImplementedError("Pose model initialization not implemented")
 
     def predict(
         self,
@@ -28,4 +28,4 @@ class PoseModel:
         """
 
         # TODO:
-        raise NotImplementedError("Pose prediction not implemented")
+        # raise NotImplementedError("Pose prediction not implemented")

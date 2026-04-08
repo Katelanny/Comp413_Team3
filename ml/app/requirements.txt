@@ -1,23 +1,14 @@
-
 fastapi
 uvicorn[standard]
-httpx
 
-# image processing
-pillow
 numpy
 opencv-python
+pillow
 
-# ML
+httpx
+
 torch
 torchvision
 
-# =========================
-# Detectron2 (install separately - see below)
-# =========================
-# detectron2
-
-# =========================
-# Optional (recommended for robustness)
-# =========================
-python-dateutil
+# Detectron2
+git+https://github.com/facebookresearch/detectron2.git

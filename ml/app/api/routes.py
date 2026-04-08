@@ -1,32 +1,17 @@
-from typing import List
-
-from fastapi import APIRouter
-from datetime import datetime
+from fastapi import APIRouter, Depends, Request
 
 from app.pipeline.pipeline import run_pipeline
 from app.pipeline.types import PredictRequest, PredictResponse
 
-from app.models.lesion_model import LesionModel
-from app.models.pose_model import PoseModel
-
 
 router = APIRouter()
 
-
-# INIT MODELS TODO: update paths
-lesion_model = LesionModel(
-    config_path="path/to/config.yaml",
-    weights_path="path/to/model_final.pth",
-)
-
-pose_model = PoseModel(
-    config_path="path/to/pose_config.yaml",
-    weights_path="path/to/pose_model.pth",
-)
+def get_models(request: Request):
+    return request.app.state.lesion_model, request.app.state.pose_model
 
 # ENDPOINTS
-@router.post("/predict")
-async def predict(request: PredictRequest):
+@router.post("/predict", response_model=PredictResponse)
+async def predict(body: PredictRequest, models = Depends(get_models)):
     """
     POST /predict
 
@@ -38,15 +23,17 @@ async def predict(request: PredictRequest):
             ]
         }
     """
+    lesion_model, pose_model = models
 
     predictions, errors = await run_pipeline(
-        request.images,
+        body.images,
         lesion_model,
         pose_model,
     )
 
     return PredictResponse(
-            patient_id = request.patient_id,
+            patient_id = body.patient_id,
             predictions = predictions,
             errors =errors
     )
+

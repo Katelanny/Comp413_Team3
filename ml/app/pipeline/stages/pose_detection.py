@@ -1,13 +1,11 @@
-from typing import List
-
-from app.pipeline.types import LesionAnalysis, PoseResult
+from app.pipeline.types import LesionAnalysis
 from app.services.image_loader import LoadedImage
 from app.models.pose_model import PoseModel
 
 
 def run_pose_detection(
-    images: List[LoadedImage],
-    lesion_analysis: List[LesionAnalysis],
+    images: list[LoadedImage],
+    lesion_analysis: list[LesionAnalysis],
     pose_model: PoseModel,
 ) -> None:
     """

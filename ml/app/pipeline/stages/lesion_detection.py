@@ -1,14 +1,12 @@
-from typing import List
-
 from app.pipeline.types import LesionAnalysis
 from app.services.image_loader import LoadedImage
 from app.models.lesion_model import LesionModel
 
 
 def run_lesion_detection(
-    images: List[LoadedImage],
+    images: list[LoadedImage],
     lesion_model: LesionModel,
-) -> List[LesionAnalysis]:
+) -> list[LesionAnalysis]:
     """
     Runs lesion detection on already validated images.
 
