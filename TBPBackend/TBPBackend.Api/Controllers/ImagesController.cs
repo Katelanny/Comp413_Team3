@@ -37,11 +37,11 @@ public class ImagesController : ControllerBase
         var userId = GetUserId();
         if (userId is null) return Unauthorized();
 
-        var signedUrl = await _imageService.GetSingleImageUrlAsync(userId, filename);
-        if (signedUrl is null)
+        var result = await _imageService.GetSingleImageUrlAsync(userId, filename);
+        if (result is null)
             return NotFound(new { error = "Image not found or does not belong to you." });
 
-        return Ok(new { filename, url = signedUrl });
+        return Ok(result);
     }
 
     [HttpPost("link")]
@@ -57,6 +57,19 @@ public class ImagesController : ControllerBase
         return Ok(new { linked = count, message = $"{count} new image(s) linked to your account." });
     }
 
+    [HttpPost("link-with-metadata")]
+    public async Task<IActionResult> LinkImagesWithMetadata([FromBody] LinkImagesWithMetadataRequest request)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        if (request.Images is null || request.Images.Count == 0)
+            return BadRequest(new { error = "Provide at least one image." });
+
+        var count = await _imageService.LinkImagesWithMetadataAsync(userId, request.Images);
+        return Ok(new { linked = count, message = $"{count} new image(s) linked to your account." });
+    }
+
     private string? GetUserId()
     {
         return User.FindFirstValue(JwtRegisteredClaimNames.Sub)
@@ -67,4 +80,9 @@ public class ImagesController : ControllerBase
 public class LinkImagesRequest
 {
     public List<string> Filenames { get; set; } = new();
+}
+
+public class LinkImagesWithMetadataRequest
+{
+    public List<ImageMetadata> Images { get; set; } = new();
 }

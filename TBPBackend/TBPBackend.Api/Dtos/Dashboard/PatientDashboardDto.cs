@@ -14,6 +14,12 @@ public class ImageInfoDto
 {
     public string FileName { get; set; } = null!;
     public string Url { get; set; } = null!;
+    public string? ModelName { get; set; }
+    public int? Index { get; set; }
+    public int? Count { get; set; }
+    public string? CameraAngle { get; set; }
+    public int? Height { get; set; }
+    public int? Width { get; set; }
     public DateTime DateTaken { get; set; }
 }
 

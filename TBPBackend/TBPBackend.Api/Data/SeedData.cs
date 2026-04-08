@@ -43,18 +43,18 @@ public static class SeedData
             ("Chest",         "Squamous cell carcinoma in situ",1, new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc)),
         });
 
-        await EnsureImages(db, patient1User.Id, new[]
+        await EnsureImages(db, patient1User.Id, new SeedImage[]
         {
-            ("model_000_WMale.png", new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc)),
-            ("model_001_WMale.png", new DateTime(2026, 2, 5, 0, 0, 0, DateTimeKind.Utc)),
-            ("model_002_WMale.png", new DateTime(2026, 2, 20, 0, 0, 0, DateTimeKind.Utc)),
+            new("model_000_WMale.png", "WMale000", 0, 209, "Front", 2048, 1024, new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc)),
+            new("model_001_WMale.png", "WMale001", 1, 210, "Side",  2048, 1024, new DateTime(2026, 2, 5, 0, 0, 0, DateTimeKind.Utc)),
+            new("model_002_WMale.png", "WMale002", 2, 211, "Back",  2048, 1024, new DateTime(2026, 2, 20, 0, 0, 0, DateTimeKind.Utc)),
         });
 
-        await EnsureImages(db, patient2User.Id, new[]
+        await EnsureImages(db, patient2User.Id, new SeedImage[]
         {
-            ("model_002_WMale.png", new DateTime(2026, 1, 22, 0, 0, 0, DateTimeKind.Utc)),
-            ("model_003_WMale.png", new DateTime(2026, 2, 12, 0, 0, 0, DateTimeKind.Utc)),
-            ("model_000_WMale.png", new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc)),
+            new("model_002_WMale.png", "WMale002", 2, 211, "Back",  2048, 1024, new DateTime(2026, 1, 22, 0, 0, 0, DateTimeKind.Utc)),
+            new("model_003_WMale.png", "WMale003", 3, 212, "Front", 2048, 1024, new DateTime(2026, 2, 12, 0, 0, 0, DateTimeKind.Utc)),
+            new("model_000_WMale.png", "WMale000", 0, 209, "Front", 2048, 1024, new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc)),
         });
 
         await EnsureVisits(db, patient1.Id, doctor.Id, new[]
@@ -183,22 +183,32 @@ public static class SeedData
     }
 
     private static async Task EnsureImages(
-        ApplicationDbContext db, string appUserId, (string fileName, DateTime date)[] images)
+        ApplicationDbContext db, string appUserId, SeedImage[] images)
     {
         var existingCount = await db.UserImages.CountAsync(i => i.AppUserId == appUserId);
         if (existingCount > 0) return;
 
-        foreach (var (fileName, date) in images)
+        foreach (var img in images)
         {
             db.UserImages.Add(new UserImage
             {
                 AppUserId = appUserId,
-                FileName = fileName,
-                CreatedAtUtc = date
+                FileName = img.FileName,
+                ModelName = img.ModelName,
+                ImageIndex = img.Index,
+                Count = img.Count,
+                CameraAngle = img.CameraAngle,
+                Height = img.Height,
+                Width = img.Width,
+                CreatedAtUtc = img.Date
             });
         }
         await db.SaveChangesAsync();
     }
+
+    private record SeedImage(
+        string FileName, string ModelName, int Index, int Count,
+        string CameraAngle, int Height, int Width, DateTime Date);
 
     private static async Task EnsureVisits(
         ApplicationDbContext db, long patientId, long doctorId, (DateTime date, string notes)[] visits)
