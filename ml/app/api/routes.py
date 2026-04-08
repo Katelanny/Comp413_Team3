@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from datetime import datetime
 
 from app.pipeline.pipeline import run_pipeline
-from app.pipeline.types import ImageInput, LesionResult, ImageError
+from app.pipeline.types import ImageInput, LesionAnalysis, ImageError
 
 from app.models.lesion_model import LesionModel
 from app.models.pose_model import PoseModel
@@ -13,7 +13,7 @@ from app.models.pose_model import PoseModel
 router = APIRouter()
 
 
-# init models #TODO: update paths
+# INIT MODELS TODO: update paths
 lesion_model = LesionModel(
     config_path="path/to/config.yaml",
     weights_path="path/to/model_final.pth",
@@ -24,33 +24,67 @@ pose_model = PoseModel(
     weights_path="path/to/pose_model.pth",
 )
 
-# helpers
+# ENDPOINTS
+@router.post("/predict")
+async def predict(request: dict):
+    """
+    POST /predict
+
+    Request:
+        {
+            "patient_id": "...",
+            "images": [
+                {"url": "...", "timestamp": "..."}
+            ]
+        }
+    """
+
+    patient_id = request["patient_id"]
+    images = request["images"]
+
+    image_inputs = _parse_request(images)
+
+    lesion_analysis, image_errors = await run_pipeline(
+        image_inputs,
+        lesion_model,
+        pose_model,
+    )
+
+    predictions = _build_predictions(lesion_analysis)
+    errors = _build_errors(image_errors)
+
+    return {
+        "patient_id": patient_id,
+        "predictions": predictions,
+        "errors": errors,
+    }
 
 
+### HELPERS
 def _parse_request(images) -> List[ImageInput]:
     parsed = []
     for img in images:
         parsed.append(
             ImageInput(
+                img_id = img["img_id"],
                 url=img["url"],
                 timestamp=datetime.fromisoformat(img["timestamp"]),
+                view = img["view"]
             )
         )
     return parsed
 
-
 def _build_predictions(
-    lesion_results: List[LesionResult],
+    lesion_results: List[LesionAnalysis],
 ):
     predictions = []
 
     for res in lesion_results:
         predictions.append(
-            {
+            {   
+                "img_id": res.img_id,
                 "timestamp": res.timestamp.isoformat(),
                 "num_lesions": len(res.lesions),
-                "input_image_url": res.image_url,
-                "prediction_image_url": None,  # TODO: fill when you generate overlays
                 "lesions": [
                     {
                         "lesion_id": lesion.lesion_id,
@@ -73,43 +107,12 @@ def _build_predictions(
 
     return predictions
 
-
-@router.post("/predict")
-async def predict(request: dict):
-    """
-    POST /predict
-
-    Request:
-        {
-            "patient_id": "...",
-            "images": [
-                {"url": "...", "timestamp": "..."}
-            ]
-        }
-    """
-
-    patient_id = request["patient_id"]
-    images = request["images"]
-
-    image_inputs = _parse_request(images)
-
-    lesion_results, image_errors = run_pipeline(
-        image_inputs,
-        lesion_model,
-        pose_model,
-    )
-
-    predictions = _build_predictions(lesion_results)
-
-    return {
-        "patient_id": patient_id,
-        "predictions": predictions,
-        "errors": [
+def _build_errors(image_errors: list[ImageError]):
+    return [
             {
                 "url": err.url,
                 "timestamp": err.timestamp.isoformat(),
                 "error": err.error,
             }
             for err in image_errors
-        ]
-    }
+    ]

@@ -4,31 +4,34 @@ from datetime import datetime
 import numpy as np
 
 
-### Input Classes
+### IMAGES
 @dataclass
 class ImageInput:
     """
     Parsed request input (after API validation).
     """
-
+    img_id: str
     url: str
     timestamp: datetime
-
+    view: str #TODO: probably should restrict to some sort of enum
 
 @dataclass
 class LoadedImage:
     """
     Image after downloading + decoding.
     """
-
-    url: str
+    img_id: str
     timestamp: datetime
+    view: str #TODO: probably should restrict to some sort of enum
     image: np.ndarray  # H x W x C
 
+@dataclass
+class ImageError:
+    img_id: str
+    timestamp: datetime
+    error: str
 
-### Lesion Detection Output Types
-
-
+### LESION DETECTION
 @dataclass
 class BoundingBox:
     x1: float
@@ -36,68 +39,48 @@ class BoundingBox:
     x2: float
     y2: float
 
-
 @dataclass
 class Lesion:
     lesion_id: str
     box: BoundingBox
     score: float
     polygon_mask: List[List[float]]
-    anatomical_site: str
+
+    # Assigned during pose detection
+    anatomical_site: Optional[str] = None
 
     # Filled during alignment stage
     prev_lesion_id: Optional[str] = None
     relative_size_change: Optional[float] = None
 
 
-### Intermediate pipeline stage outputs
+### PIPELINE
 @dataclass
-class ImageLoadResult:
-    url: str
-    timestamp: datetime
-    image: Optional[np.ndarray]
-    error: Optional[str] = None
-
-
-@dataclass
-class ImageError:
-    url: str
-    timestamp: datetime
-    error: str
-
-
-@dataclass
-class LesionResult:
+class LesionAnalysis:
     """
     Output of lesion detection for a single image.
     """
-
-    image_url: str
+    img_id: str
     timestamp: datetime
+    view: str #TODO: probably should restrict to some sort of enum
     lesions: List[Lesion]
-
 
 @dataclass
 class PoseResult:  # TODO: update
     """
     Output of pose detection for a single image.
     """
-
-    image_url: str
-    timestamp: datetime
+    img_id: str
     # Keep minimal for now; expand later if needed
     keypoints: Optional[List[List[float]]] = None
 
 
 ### Final output
-
-
 @dataclass
 class ImagePrediction:
     """
     Final per-image prediction (matches API response).
     """
-
     timestamp: datetime
     input_image_url: str
     prediction_image_url: str

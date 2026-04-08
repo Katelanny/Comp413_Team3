@@ -74,15 +74,21 @@ PredictRequest:
       items:
         type: object
         required:
+          - img_id
           - url
           - timestamp
+          - view
         properties:
+          img_id:
+            type: string
           url:
             type: string
             format: uri
           timestamp:
             type: string
             format: date-time
+          view:
+            type: string
 
 PredictResponse:
   type: object
@@ -100,29 +106,22 @@ PredictResponse:
         items: 
             type: object
             required: 
+                - img_id
                 - timestamp
                 - num_lesions
-                - input_image_url
-                - prediction_image_url
                 - lesions
             
             properties:
+                img_id:
+                  type: string
+
                 timestamp:
                   type: string
                   format: date-time
                 
-
                 num_lesions:
                     type: integer
                 
-                input_image_url:
-                    type: string
-
-                prediction_image_url:
-                    type: string
-                    format: uri
-                    description: URL to image with model predictions overlaid
-
                 lesions:
                     type: array
                     items:
@@ -137,7 +136,7 @@ PredictResponse:
                         properties:
                         lesion_id:
                             type: string
-                            description: "{patient_id}_{time}_{index}"
+                            description: "{img_id}_{index}"
 
                         box:
                             type: object
@@ -187,10 +186,12 @@ PredictResponse:
       items:
         type: object
         required:
-          - url
+          - img_id
           - timestamp
+          - error
+
         properties:
-          url:
+          img_id:
             type: string
           timestamp:
             type: string

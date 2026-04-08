@@ -1,6 +1,5 @@
 import asyncio
 from dataclasses import dataclass
-from typing import List, Optional
 from datetime import datetime
 from io import BytesIO
 
@@ -8,29 +7,19 @@ import httpx
 import numpy as np
 from PIL import Image
 
-from app.pipeline.types import ImageInput, ImageLoadResult
+from app.pipeline.types import ImageInput, LoadedImage, ImageError
 
 
 MAX_CONCURRENT_DOWNLOADS = 10
 REQUEST_TIMEOUT = 10.0  # seconds
 
 
-# =========================
-# Result Type (internal)
-# =========================
-
-
-# =========================
-# Public API
-# =========================
-
-
-async def load_images(image_inputs: List[ImageInput]) -> List[ImageLoadResult]:
+async def load_images(image_inputs: list[ImageInput]) -> tuple[list[LoadedImage], list[ImageError]]:
     """
     Downloads and decodes images concurrently.
 
     Returns:
-        List[ImageLoadResult] with same length/order as input.
+        list[LoadedImage | ImageError] with same length as input.
         Each item contains either:
             - image (success)
             - error (failure)
@@ -45,19 +34,17 @@ async def load_images(image_inputs: List[ImageInput]) -> List[ImageLoadResult]:
 
         results = await asyncio.gather(*tasks)
 
-    return results
+    valid_images: list[LoadedImage] = [res for res in results if isinstance(res, LoadedImage)]
+    image_errors: list[ImageError] = [res for res in results if isinstance(res, ImageError)]
 
-
-# =========================
-# Internal Helpers
-# =========================
+    return valid_images, image_errors
 
 
 async def _load_single_image(
     client: httpx.AsyncClient,
     semaphore: asyncio.Semaphore,
     img_input: ImageInput,
-) -> ImageLoadResult:
+) -> LoadedImage | ImageError:
     """
     Downloads and decodes a single image.
     Always returns an ImageLoadResult (never raises).
@@ -69,26 +56,24 @@ async def _load_single_image(
 
             image = _decode_image(response.content)
 
-            return ImageLoadResult(
-                url=img_input.url,
+            return LoadedImage(
+                img_id = img_input.img_id,
                 timestamp=img_input.timestamp,
+                view = img_input.view,
                 image=image,
-                error=None,
             )
 
         except httpx.HTTPError:
-            return ImageLoadResult(
-                url=img_input.url,
+            return ImageError(
+                img_id = img_input.img_id,
                 timestamp=img_input.timestamp,
-                image=None,
                 error="download_failed",
             )
 
         except Exception:
-            return ImageLoadResult(
-                url=img_input.url,
+            return ImageError(
+                img_id = img_input.img_id,
                 timestamp=img_input.timestamp,
-                image=None,
                 error="decode_failed",
             )
 

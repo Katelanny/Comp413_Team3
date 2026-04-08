@@ -1,14 +1,14 @@
 from typing import List
 
-from app.pipeline.types import LesionResult
-from app.services.image_loader import ImageLoadResult
+from app.pipeline.types import LesionAnalysis
+from app.services.image_loader import LoadedImage
 from app.models.lesion_model import LesionModel
 
 
 def run_lesion_detection(
-    valid_image_results: List[ImageLoadResult],
+    images: List[LoadedImage],
     lesion_model: LesionModel,
-) -> List[LesionResult]:
+) -> List[LesionAnalysis]:
     """
     Runs lesion detection on already validated images.
 
@@ -20,20 +20,12 @@ def run_lesion_detection(
         List[LesionResult] aligned with input order
     """
 
-    if not valid_image_results:
+    if not images:
         return []
 
-    images = [img.image for img in valid_image_results]
-    urls = [img.url for img in valid_image_results]
-    timestamps = [img.timestamp for img in valid_image_results]
-
     try:
-        lesion_results = lesion_model.predict(
-            images,
-            urls,
-            timestamps,
-        )
-        return lesion_results
+        lesion_analysis = lesion_model.predict(images)
+        return lesion_analysis
 
     except Exception:
         return []

@@ -1,11 +1,9 @@
-from typing import List
-
-from app.pipeline.types import LesionResult
+from app.pipeline.types import LesionAnalysis
 
 
 def run_lesion_matching_by_time(
-    lesion_results: List[LesionResult],
-) -> List[LesionResult]:
+    lesion_results: list[LesionAnalysis],
+) -> None:
     """
     Performs temporal alignment of lesions across timepoints.
 

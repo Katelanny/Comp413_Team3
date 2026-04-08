@@ -1,15 +1,15 @@
 from typing import List
 
-from app.pipeline.types import LesionResult, PoseResult
-from app.services.image_loader import ImageLoadResult
+from app.pipeline.types import LesionAnalysis, PoseResult
+from app.services.image_loader import LoadedImage
 from app.models.pose_model import PoseModel
 
 
 def run_pose_detection(
-    valid_image_results: List[ImageLoadResult],
-    lesion_results: List[LesionResult],
+    images: List[LoadedImage],
+    lesion_analysis: List[LesionAnalysis],
     pose_model: PoseModel,
-) -> List[PoseResult]:
+) -> None:
     """
     Runs pose detection on already validated images.
 
@@ -21,22 +21,17 @@ def run_pose_detection(
         List[PoseResult] aligned with input order
     """
 
-    if not valid_image_results:
+    if not images:
         return []
 
-    images = [img.image for img in valid_image_results]
-    urls = [img.url for img in valid_image_results]
-    timestamps = [img.timestamp for img in valid_image_results]
 
     try:
         pose_results = pose_model.predict(
-            images,
-            urls,
-            timestamps,
+            images
         )
     except Exception:
-        return lesion_results
+        return lesion_analysis
 
     # TODO: combine info from pose_result to fill in the anatomical site in lesion_result
 
-    return lesion_results
+    

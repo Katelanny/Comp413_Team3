@@ -1,5 +1,3 @@
-from typing import List
-
 import cv2
 import numpy as np
 import torch
@@ -7,8 +5,7 @@ import torch
 from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 
-from app.pipeline.types import Lesion, LesionResult, BoundingBox
-
+from app.pipeline.types import Lesion, LoadedImage, LesionAnalysis, BoundingBox
 
 class LesionModel:
     def __init__(self, config_path: str, weights_path: str, score_thresh: float = 0.3):
@@ -24,41 +21,40 @@ class LesionModel:
 
         self.predictor = DefaultPredictor(cfg)
 
-    def predict(
-        self, images: List[np.ndarray], urls: List[str], timestamps: List
-    ) -> List[LesionResult]:
+    def predict(self, images: list[LoadedImage]) -> list[LesionAnalysis]:
         """
         Run lesion detection on a batch of images.
 
         Args:
             images: List of np.ndarray images (H x W x C)
-            urls: Corresponding image URLs
+            ids: Corresponding image ids
             timestamps: Corresponding timestamps
 
         Returns:
             List[LesionResult]
         """
-        results: List[LesionResult] = []
+        results: list[LesionAnalysis] = []
 
-        for img, url, ts in zip(images, urls, timestamps):
-            outputs = self.predictor(img)
+        for img in images:
+            outputs = self.predictor(img.image)
             instances = outputs["instances"].to("cpu")
 
-            lesions = self._instances_to_lesions(instances, url, ts)
+            lesions = self._instances_to_lesions(instances, img.img_id, img.timestamp)
 
             results.append(
-                LesionResult(
-                    image_url=url,
-                    timestamp=ts,
+                LesionAnalysis(
+                    img_id=img.img_id,
+                    timestamp=img.timestamp,
+                    view = img.view,
                     lesions=lesions,
                 )
             )
 
         return results
 
-    def _instances_to_lesions(self, instances, url: str, timestamp) -> List[Lesion]:
+    def _instances_to_lesions(self, instances, img_id: str) -> list[Lesion]:
         """
-        Convert Detectron2 Instances → List[Lesion]
+        Convert Detectron2 Instances → list[Lesion]
         """
         boxes = (
             instances.pred_boxes.tensor.numpy() if instances.has("pred_boxes") else []
@@ -66,16 +62,16 @@ class LesionModel:
         scores = instances.scores.numpy() if instances.has("scores") else []
         masks = instances.pred_masks.numpy() if instances.has("pred_masks") else []
 
-        lesions: List[Lesion] = []
+        lesions: list[Lesion] = []
 
         for i in range(len(boxes)):
             box = boxes[i]
             score = float(scores[i])
 
             polygon_mask = self._mask_to_polygon(masks[i]) if len(masks) > i else []
-
+   
             lesion = Lesion(
-                lesion_id=f"{timestamp}_{i}",  # refined later in pipeline
+                lesion_id= f"{img_id}_{i}", # globally unique id
                 box=BoundingBox(
                     x1=float(box[0]),
                     y1=float(box[1]),
@@ -84,17 +80,16 @@ class LesionModel:
                 ),
                 score=score,
                 polygon_mask=polygon_mask,
-                anatomical_site="unknown",  # filled later (pose stage)
             )
 
             lesions.append(lesion)
 
         return lesions
 
-    def _mask_to_polygon(self, mask: np.ndarray) -> List[List[float]]:
+    def _mask_to_polygon(self, mask: np.ndarray) -> list[list[float]]:
         """
         Convert binary mask → polygon(s).
-        Minimal version (can improve later).
+        Minimal version (can improve later). #TODO: ?
         """
 
         contours, _ = cv2.findContours(

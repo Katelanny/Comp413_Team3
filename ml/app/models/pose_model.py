@@ -1,7 +1,4 @@
-from typing import List
-import numpy as np
-
-from app.pipeline.types import PoseResult
+from app.pipeline.types import LoadedImage, PoseResult
 
 
 class PoseModel:
@@ -18,20 +15,16 @@ class PoseModel:
 
     def predict(
         self,
-        images: List[np.ndarray],
-        urls: List[str],
-        timestamps: List,
-    ) -> List[PoseResult]:
+        images: list[LoadedImage],
+    ) -> list[PoseResult]:
         """
         Run pose detection on a batch of images.
 
         Args:
-            images: List of np.ndarray images (H x W x C)
-            urls: Corresponding image URLs
-            timestamps: Corresponding timestamps
+            images: list of LoadedImage
 
         Returns:
-            List[PoseResult] aligned with input order
+            list[PoseResult]
         """
 
         # TODO:
