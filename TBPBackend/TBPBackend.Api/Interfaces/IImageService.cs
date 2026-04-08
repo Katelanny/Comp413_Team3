@@ -2,6 +2,7 @@ namespace TBPBackend.Api.Interfaces;
 
 public interface IImageService
 {
+    Task<List<ImageUrlResult>> GetAllImagesAsync();
     Task<List<ImageUrlResult>> GetAllImageUrlsAsync(string userId);
     Task<ImageUrlResult?> GetSingleImageUrlAsync(string userId, string filename);
     Task<int> LinkImagesToUserAsync(string userId, List<string> filenames);
@@ -9,6 +10,7 @@ public interface IImageService
 }
 
 public record ImageUrlResult(
+    long Id,
     string FileName,
     string SignedUrl,
     string? ModelName = null,

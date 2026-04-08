@@ -18,6 +18,41 @@ public class ImagesController : ControllerBase
         _imageService = imageService;
     }
 
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAllImages()
+    {
+        var images = await _imageService.GetAllImagesAsync();
+
+        var result = images.Select(img => new
+        {
+            imageId = img.Id,
+            imageUrl = img.SignedUrl,
+            cameraAngle = img.CameraAngle,
+            createdAt = img.DateTaken
+        });
+
+        return Ok(result);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetMyImageMetadata()
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var images = await _imageService.GetAllImageUrlsAsync(userId);
+
+        var result = images.Select(img => new
+        {
+            imageId = img.Id,
+            imageUrl = img.SignedUrl,
+            cameraAngle = img.CameraAngle,
+            createdAt = img.DateTaken
+        });
+
+        return Ok(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> GetMyImages()
     {

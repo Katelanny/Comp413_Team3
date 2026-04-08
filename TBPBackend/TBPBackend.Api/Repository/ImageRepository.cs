@@ -14,6 +14,13 @@ public class ImageRepository : IImageRepository
         _context = context;
     }
 
+    public async Task<List<UserImage>> GetAllImagesAsync()
+    {
+        return await _context.UserImages
+            .OrderBy(ui => ui.CreatedAtUtc)
+            .ToListAsync();
+    }
+
     public async Task<List<UserImage>> GetImagesByUserIdAsync(string userId)
     {
         return await _context.UserImages

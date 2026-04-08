@@ -14,6 +14,27 @@ public class ImageService : IImageService
         _imageRepository = imageRepository;
     }
 
+    public async Task<List<ImageUrlResult>> GetAllImagesAsync()
+    {
+        var images = await _imageRepository.GetAllImagesAsync();
+        var urlSigner = await CreateUrlSignerAsync();
+        var results = new List<ImageUrlResult>();
+
+        foreach (var img in images)
+        {
+            var signedUrl = await urlSigner.SignAsync(
+                BucketName, img.FileName, TimeSpan.FromMinutes(15), HttpMethod.Get);
+
+            results.Add(new ImageUrlResult(
+                img.Id, img.FileName, signedUrl,
+                img.ModelName, img.ImageIndex, img.Count,
+                img.CameraAngle, img.Height, img.Width,
+                img.CreatedAtUtc));
+        }
+
+        return results;
+    }
+
     public async Task<List<ImageUrlResult>> GetAllImageUrlsAsync(string userId)
     {
         var images = await _imageRepository.GetImagesByUserIdAsync(userId);
@@ -27,7 +48,7 @@ public class ImageService : IImageService
                 BucketName, img.FileName, TimeSpan.FromMinutes(15), HttpMethod.Get);
 
             results.Add(new ImageUrlResult(
-                img.FileName, signedUrl,
+                img.Id, img.FileName, signedUrl,
                 img.ModelName, img.ImageIndex, img.Count,
                 img.CameraAngle, img.Height, img.Width,
                 img.CreatedAtUtc));
@@ -46,7 +67,7 @@ public class ImageService : IImageService
             BucketName, image.FileName, TimeSpan.FromMinutes(15), HttpMethod.Get);
 
         return new ImageUrlResult(
-            image.FileName, signedUrl,
+            image.Id, image.FileName, signedUrl,
             image.ModelName, image.ImageIndex, image.Count,
             image.CameraAngle, image.Height, image.Width,
             image.CreatedAtUtc);
