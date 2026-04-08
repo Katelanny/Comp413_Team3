@@ -1,19 +1,57 @@
 from dataclasses import dataclass
-from typing import List, Optional
 from datetime import datetime
 import numpy as np
+from pydantic import BaseModel, HttpUrl
 
+### API SCHEMAS
 
-### IMAGES
-@dataclass
-class ImageInput:
-    """
-    Parsed request input (after API validation).
-    """
+# Request:
+class ImageRequest(BaseModel):
     img_id: str
-    url: str
+    url: HttpUrl
     timestamp: datetime
-    view: str #TODO: probably should restrict to some sort of enum
+    view: str  # TODO: convert to Enum
+
+class PredictRequest(BaseModel):
+    patient_id: str
+    images: list[ImageRequest]
+
+
+# Response:
+class BoundingBox(BaseModel):
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+
+class Lesion(BaseModel):
+    lesion_id: str
+    box: BoundingBox
+    score: float
+    polygon_mask: list[list[float]]
+
+    anatomical_site: str | None = None
+    prev_lesion_id:  str | None = None
+    relative_size_change:  float | None = None
+
+class Prediction(BaseModel):
+    img_id: str
+    timestamp: datetime
+    num_lesions: int
+    lesions: list[Lesion]
+
+class ImageError(BaseModel):
+    img_id: str
+    timestamp: datetime
+    error: str
+
+class PredictResponse(BaseModel):
+    patient_id: str
+    predictions: list[Prediction]
+    errors: list[ImageError]
+
+
+### Internal Dataclasses
 
 @dataclass
 class LoadedImage:
@@ -22,68 +60,27 @@ class LoadedImage:
     """
     img_id: str
     timestamp: datetime
-    view: str #TODO: probably should restrict to some sort of enum
+    view: str #TODO: enum?
     image: np.ndarray  # H x W x C
 
-@dataclass
-class ImageError:
-    img_id: str
-    timestamp: datetime
-    error: str
+### PIPELINE OUTPUTS
 
-### LESION DETECTION
-@dataclass
-class BoundingBox:
-    x1: float
-    y1: float
-    x2: float
-    y2: float
-
-@dataclass
-class Lesion:
-    lesion_id: str
-    box: BoundingBox
-    score: float
-    polygon_mask: List[List[float]]
-
-    # Assigned during pose detection
-    anatomical_site: Optional[str] = None
-
-    # Filled during alignment stage
-    prev_lesion_id: Optional[str] = None
-    relative_size_change: Optional[float] = None
-
-
-### PIPELINE
 @dataclass
 class LesionAnalysis:
-    """
-    Output of lesion detection for a single image.
-    """
     img_id: str
     timestamp: datetime
-    view: str #TODO: probably should restrict to some sort of enum
-    lesions: List[Lesion]
+    view: str
+    lesions: list[Lesion]
+
+    def to_prediction(self) -> Prediction:
+        return Prediction(
+            img_id=self.img_id,
+            timestamp=self.timestamp,
+            num_lesions=len(self.lesions),
+            lesions=self.lesions,
+        )
 
 @dataclass
-class PoseResult:  # TODO: update
-    """
-    Output of pose detection for a single image.
-    """
+class PoseResult:
     img_id: str
-    # Keep minimal for now; expand later if needed
-    keypoints: Optional[List[List[float]]] = None
-
-
-### Final output
-@dataclass
-class ImagePrediction:
-    """
-    Final per-image prediction (matches API response).
-    """
-    timestamp: datetime
-    input_image_url: str
-    prediction_image_url: str
-    num_lesions: int
-    lesions: List[Lesion]
-    error: Optional[str] = None
+    keypoints: list[list[float]] | None

@@ -1,4 +1,4 @@
-from app.pipeline.types import ImageInput, LesionAnalysis, ImageError
+from app.pipeline.types import ImageRequest, LesionAnalysis, ImageError, Prediction
 from app.services.image_loader import load_images
 
 from app.models.lesion_model import LesionModel
@@ -10,10 +10,10 @@ from app.pipeline.stages.lesion_matching_by_time import run_lesion_matching_by_t
 
 
 async def run_pipeline(
-    image_inputs: list[ImageInput],
+    images: list[ImageRequest],
     lesion_model: LesionModel,
     pose_model: PoseModel,
-) -> tuple[list[LesionAnalysis], list[ImageError]]:
+) -> tuple[list[Prediction], list[ImageError]]:
     """
     Main pipeline:
         1. Load images
@@ -24,7 +24,7 @@ async def run_pipeline(
         6. Return results + errors
     """
 
-    valid_images, image_errors = await load_images(image_inputs)
+    valid_images, image_errors = await load_images(images)
 
     if not valid_images:
         return [], image_errors
@@ -51,4 +51,4 @@ async def run_pipeline(
     # 3. lesion matching by time, mutates lesion_analysis
     #TODO: run_lesion_matching_by_time(lesion_analysis)
 
-    return lesion_analysis, image_errors
+    return lesion_analysis.to_prediction(), image_errors

@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from datetime import datetime
 
 from app.pipeline.pipeline import run_pipeline
-from app.pipeline.types import ImageInput, LesionAnalysis, ImageError
+from app.pipeline.types import PredictRequest, PredictResponse
 
 from app.models.lesion_model import LesionModel
 from app.models.pose_model import PoseModel
@@ -26,7 +26,7 @@ pose_model = PoseModel(
 
 # ENDPOINTS
 @router.post("/predict")
-async def predict(request: dict):
+async def predict(request: PredictRequest):
     """
     POST /predict
 
@@ -39,80 +39,14 @@ async def predict(request: dict):
         }
     """
 
-    patient_id = request["patient_id"]
-    images = request["images"]
-
-    image_inputs = _parse_request(images)
-
-    lesion_analysis, image_errors = await run_pipeline(
-        image_inputs,
+    predictions, errors = await run_pipeline(
+        request.images,
         lesion_model,
         pose_model,
     )
 
-    predictions = _build_predictions(lesion_analysis)
-    errors = _build_errors(image_errors)
-
-    return {
-        "patient_id": patient_id,
-        "predictions": predictions,
-        "errors": errors,
-    }
-
-
-### HELPERS
-def _parse_request(images) -> List[ImageInput]:
-    parsed = []
-    for img in images:
-        parsed.append(
-            ImageInput(
-                img_id = img["img_id"],
-                url=img["url"],
-                timestamp=datetime.fromisoformat(img["timestamp"]),
-                view = img["view"]
-            )
-        )
-    return parsed
-
-def _build_predictions(
-    lesion_results: List[LesionAnalysis],
-):
-    predictions = []
-
-    for res in lesion_results:
-        predictions.append(
-            {   
-                "img_id": res.img_id,
-                "timestamp": res.timestamp.isoformat(),
-                "num_lesions": len(res.lesions),
-                "lesions": [
-                    {
-                        "lesion_id": lesion.lesion_id,
-                        "box": {
-                            "x1": lesion.box.x1,
-                            "y1": lesion.box.y1,
-                            "x2": lesion.box.x2,
-                            "y2": lesion.box.y2,
-                        },
-                        "score": lesion.score,
-                        "polygon_mask": lesion.polygon_mask,
-                        "anatomical_site": lesion.anatomical_site,
-                        "prev_lesion_id": lesion.prev_lesion_id,
-                        "relative_size_change": lesion.relative_size_change,
-                    }
-                    for lesion in res.lesions
-                ],
-            }
-        )
-
-    return predictions
-
-def _build_errors(image_errors: list[ImageError]):
-    return [
-            {
-                "url": err.url,
-                "timestamp": err.timestamp.isoformat(),
-                "error": err.error,
-            }
-            for err in image_errors
-    ]
+    return PredictResponse(
+            patient_id = request.patient_id,
+            predictions = predictions,
+            errors =errors
+    )
