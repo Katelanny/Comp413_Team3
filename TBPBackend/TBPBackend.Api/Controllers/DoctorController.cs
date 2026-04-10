@@ -95,10 +95,13 @@ public class DoctorController : ControllerBase
             {
                 FileName = i.FileName,
                 Url = i.SignedUrl,
-                DateTaken = _db.UserImages
-                    .Where(ui => ui.AppUserId == patient.AppUserId && ui.FileName == i.FileName)
-                    .Select(ui => ui.CreatedAtUtc)
-                    .FirstOrDefault()
+                ModelName = i.ModelName,
+                Index = i.Index,
+                Count = i.Count,
+                CameraAngle = i.CameraAngle,
+                Height = i.Height,
+                Width = i.Width,
+                DateTaken = i.DateTaken ?? DateTime.MinValue
             }).ToList();
         }
 
