@@ -25,3 +25,11 @@ next-env.d.ts
 *.user
 *.suo
 *.log
+
+# ml
+*.pth
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.cache/

@@ -5,14 +5,14 @@ import httpx
 import numpy as np
 from PIL import Image
 
-from app.pipeline.types import ImageInput, LoadedImage, ImageError
+from app.pipeline.types import ImageRequest, LoadedImage, ImageError
 
 
 MAX_CONCURRENT_DOWNLOADS = 10
 REQUEST_TIMEOUT = 10.0  # seconds
 
 
-async def load_images(image_inputs: list[ImageInput]) -> tuple[list[LoadedImage], list[ImageError]]:
+async def load_images(image_inputs: list[ImageRequest]) -> tuple[list[LoadedImage], list[ImageError]]:
     """
     Downloads and decodes images concurrently.
 
@@ -41,7 +41,7 @@ async def load_images(image_inputs: list[ImageInput]) -> tuple[list[LoadedImage]
 async def _load_single_image(
     client: httpx.AsyncClient,
     semaphore: asyncio.Semaphore,
-    img_input: ImageInput,
+    img_input: ImageRequest,
 ) -> LoadedImage | ImageError:
     """
     Downloads and decodes a single image.
