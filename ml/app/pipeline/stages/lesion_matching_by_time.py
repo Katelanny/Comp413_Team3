@@ -1,4 +1,6 @@
-from app.pipeline.types import LesionAnalysis
+from datetime import datetime
+
+from app.pipeline.types import BoundingBox, LesionAnalysis
 
 
 def run_lesion_matching_by_time(
@@ -25,4 +27,58 @@ def run_lesion_matching_by_time(
     Returns:
         List[LesionResult] with updated lesion fields (same objects, mutated)
     """
-    raise NotImplementedError("Lesion matching by time not implemented")
+    lesion_results.sort(key=lambda x: x.timestamp)
+
+    for i in range(1, len(lesion_results)):
+        prev = lesion_results[i-1]
+        curr = lesion_results[i]
+
+        matched_prev_lesions = set()
+
+        for lesion in curr.lesions:
+            best_iou = 0
+            best_match = None
+            iou_threshold = 0.3
+
+            for prev_lesion in prev.lesions:
+                if prev_lesion.anatomical_site != lesion.anatomical_site:
+                    continue
+                if prev_lesion.lesion_id in matched_prev_lesions:
+                    continue
+
+                iou = calculate_iou(lesion.box, prev_lesion.box)
+
+                if iou > best_iou:
+                    best_iou = iou
+                    best_match = prev_lesion
+                
+            if best_iou >= iou_threshold and best_match and best_match.lesion_id not in matched_prev_lesions:
+                lesion.prev_lesion_id = best_match.lesion_id
+
+                area_prev = get_area(best_match.box)
+                area_curr = get_area(lesion.box)
+
+                if area_prev > 0:
+                    lesion.relative_size_change = (area_curr - area_prev) / area_prev
+
+
+def get_area(box: BoundingBox) -> float:
+    return max(0, box.x2 - box.x1) * max(0, box.y2 - box.y1)
+
+def calculate_iou(boxA: BoundingBox, boxB: BoundingBox) -> float:
+    xA = max(boxA.x1, boxB.x1)
+    yA = max(boxA.y1, boxB.y1)
+    xB = min(boxA.x2, boxB.x2)
+    yB = min(boxA.y2, boxB.y2)
+
+    interArea = max(0, xB - xA) * max(0, yB - yA)
+
+    boxAArea = (boxA.x2 - boxA.x1) * (boxA.y2 - boxA.y1)
+    boxBArea = (boxB.x2 - boxB.x1) * (boxB.y2 - boxB.y1)
+
+    iou = interArea / float(boxAArea + boxBArea - interArea) if (boxAArea + boxBArea - interArea) > 0 else 0
+
+    return iou
+
+
+
