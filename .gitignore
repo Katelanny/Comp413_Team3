@@ -25,6 +25,7 @@ next-env.d.ts
 *.user
 *.suo
 *.log
+appsettings.development.json
 
 # ml
 *.pth
