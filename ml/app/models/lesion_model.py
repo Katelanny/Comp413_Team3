@@ -39,7 +39,7 @@ class LesionModel:
             outputs = self.predictor(img.image)
             instances = outputs["instances"].to("cpu")
 
-            lesions = self._instances_to_lesions(instances, img.img_id, img.timestamp)
+            lesions = self._instances_to_lesions(instances, img.img_id)
 
             results.append(
                 LesionAnalysis(

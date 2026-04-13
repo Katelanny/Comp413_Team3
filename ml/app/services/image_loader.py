@@ -49,7 +49,7 @@ async def _load_single_image(
     """
     async with semaphore:
         try:
-            response = await client.get(img_input.url)
+            response = await client.get(str(img_input.url))
             response.raise_for_status()
 
             image = _decode_image(response.content)
@@ -68,11 +68,11 @@ async def _load_single_image(
                 error="download_failed",
             )
 
-        except Exception:
+        except Exception as e:
             return ImageError(
                 img_id = img_input.img_id,
                 timestamp=img_input.timestamp,
-                error="decode_failed",
+                error=f"decode_failed: str{e}",
             )
 
 
