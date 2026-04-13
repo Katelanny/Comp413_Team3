@@ -57,7 +57,7 @@ async def _load_single_image(
             return LoadedImage(
                 img_id = img_input.img_id,
                 timestamp=img_input.timestamp,
-                view = img_input.view,
+                camera_angle= img_input.camera_angle,
                 image=image,
             )
 

@@ -45,7 +45,7 @@ class LesionModel:
                 LesionAnalysis(
                     img_id=img.img_id,
                     timestamp=img.timestamp,
-                    view = img.view,
+                    camera_angle = img.camera_angle,
                     lesions=lesions,
                 )
             )

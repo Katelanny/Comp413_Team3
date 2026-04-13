@@ -10,7 +10,7 @@ class ImageRequest(BaseModel):
     img_id: str
     url: HttpUrl
     timestamp: datetime
-    view: str  # TODO: convert to Enum
+    camera_angle: str  # TODO: convert to Enum
 
 class PredictRequest(BaseModel):
     patient_id: str
@@ -60,7 +60,7 @@ class LoadedImage:
     """
     img_id: str
     timestamp: datetime
-    view: str #TODO: enum?
+    camera_angle: str #TODO: enum?
     image: np.ndarray  # H x W x C
 
 ### PIPELINE OUTPUTS
@@ -69,7 +69,7 @@ class LoadedImage:
 class LesionAnalysis:
     img_id: str
     timestamp: datetime
-    view: str
+    camera_angle: str
     lesions: list[Lesion]
 
     def to_prediction(self) -> Prediction:

@@ -16,6 +16,42 @@ app/
 └── services/
     └── image_loader.py           # Async image downloading
 ```
+# Local Development Setup
+
+### 1. Environment Setup
+Navigate to the `ml` directory and initialize your virtual environment:
+
+```bash
+# Navigate to the ml directory
+cd ml
+
+# Create a virtual environment
+python3 -m venv .venv
+
+# Activate the environment (macOS/Linux):
+source .venv/bin/activate
+```
+
+### 2. Install Dependencies
+```bash
+pip install -r app/requirements.txt
+
+pip install --no-build-isolation 'git+[https://github.com/facebookresearch/detectron2.git](https://github.com/facebookresearch/detectron2.git)'
+```
+
+### 3. Start Application
+```bash
+uvicorn app.main:app
+```
+
+To view the endpoints, navigate to:
+```bash
+  http://127.0.0.1:8000/docs
+```
+
+
+# Install Detectron2 from source
+
 
 # Application Architecture
 
@@ -77,7 +113,7 @@ PredictRequest:
           - img_id
           - url
           - timestamp
-          - view
+          - camera_angle
         properties:
           img_id:
             type: string
@@ -87,7 +123,7 @@ PredictRequest:
           timestamp:
             type: string
             format: date-time
-          view:
+          camera_angle:
             type: string
 
 PredictResponse:
