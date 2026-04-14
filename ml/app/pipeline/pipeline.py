@@ -49,7 +49,7 @@ async def run_pipeline(
     # TODO: run_pose_detection(valid_images, lesion_analysis, pose_model)
 
     # 3. lesion matching by time, mutates lesion_analysis
-    #TODO: run_lesion_matching_by_time(lesion_analysis)
+    run_lesion_matching_by_time(lesion_analysis)
 
     predictions = [la.to_prediction() for la in lesion_analysis]
     return predictions, image_errors
