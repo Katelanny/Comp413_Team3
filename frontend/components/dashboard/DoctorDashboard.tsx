@@ -9,6 +9,64 @@ import {
   User,
 } from "lucide-react";
 
+const dummyLesionData = {
+  predictions: [
+    {
+      img_id: "24",
+      lesions: [
+        {
+          lesion_id: "string_0",
+          score: 0.9981,
+          anatomical_site: "Left Arm",
+          prev_lesion_id: null,
+          relative_size_change: "+5%",
+          polygon_mask: [[496,623,495,624,494,624,489,629,489,630,488,631,488,635,489,636,489,637,490,638,491,638,493,640,504,640,505,639,505,638,506,637,506,628,505,627,505,626,503,624,502,624,501,623]]
+        },
+        {
+          lesion_id: "string_1",
+          score: 0.9970,
+          anatomical_site: "Back",
+          prev_lesion_id: "string_0",
+          relative_size_change: "-2%",
+          polygon_mask: [[586,796,585,797,584,797,583,798,583,799,582,800,582,801,581,802,581,811,582,812,582,813,584,815,594,815,595,814,595,813,596,812,596,802,595,801,595,799,592,796]]
+        },
+        {
+          lesion_id: "string_2",
+          score: 0.9964,
+          anatomical_site: "Right Shoulder",
+          prev_lesion_id: "string_1",
+          relative_size_change: "+1%",
+          polygon_mask: [[482,904,481,905,480,905,475,910,475,911,474,912,474,913,473,914,473,923,474,924,474,925,488,925,491,922,491,908,490,907,490,905,489,904]]
+        },
+        {
+          lesion_id: "string_3",
+          score: 0.9955,
+          anatomical_site: "Lower Back",
+          prev_lesion_id: null,
+          relative_size_change: "0%",
+          polygon_mask: [[382,1313,380,1315,380,1323,381,1324,381,1325,390,1325,391,1324,391,1317,388,1314,387,1314,386,1313]]
+        },
+        {
+          lesion_id: "string_4",
+          score: 0.9952,
+          anatomical_site: "Left Leg",
+          prev_lesion_id: "string_2",
+          relative_size_change: "+3%",
+          polygon_mask: [[321,527,320,528,319,528,317,530,317,531,316,532,316,542,317,543,317,545,318,546,318,547,322,551,330,551,331,550,331,536,329,534,329,533,325,529,324,529,323,528,322,528]]
+        },
+        {
+          lesion_id: "string_5",
+          score: 0.9924,
+          anatomical_site: "Neck",
+          prev_lesion_id: null,
+          relative_size_change: "-1%",
+          polygon_mask: [[818,544,816,546,816,552,817,553,825,553,826,552,826,551,827,550,826,549,826,547,824,545,823,545,822,544]]
+        }
+      ]
+    }
+  ]
+};
+
 export default function DoctorDashboard() {
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
@@ -21,6 +79,7 @@ export default function DoctorDashboard() {
   const [imagesLoading, setImagesLoading] = useState(false);
   const [lesions, setLesions] = useState<any[]>([]);
   const [patientDetails, setPatientDetails] = useState<any>(null);
+  const [selectedLesion, setSelectedLesion] = useState<any>(null);
   
   function findLesionForImage(img: any, lesions: any[]) {
     return lesions.find(
@@ -308,13 +367,34 @@ export default function DoctorDashboard() {
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={src}
-                alt={alt}
-                className="absolute left-0 top-0 h-full w-full object-contain object-center select-none"
-                draggable={false}
-                onError={() => setFailed(true)}
-              />
+              <div className="relative w-full h-full">
+                <img
+                  src={src}
+                  alt={alt}
+                  className="w-full h-full object-contain"
+                  onLoad={(e) => {
+                    const img = e.currentTarget;
+                    console.log("Natural size:", img.naturalWidth, img.naturalHeight);
+                  }}
+                />
+                {selectedLesion && (
+                  <div className="absolute bg-white border rounded-lg shadow-lg p-3 text-xs z-10"
+                      style={{ top: 20, left: 20 }}>
+                    <p><strong>ID:</strong> {selectedLesion.lesion_id}</p>
+                    <p><strong>Confidence:</strong> {(selectedLesion.score * 100).toFixed(2)}%</p>
+                    <p><strong>Site:</strong> {selectedLesion.anatomical_site ?? "N/A"}</p>
+                    <p><strong>Previous:</strong> {selectedLesion.prev_lesion_id ?? "None"}</p>
+                    <p><strong>Change:</strong> {selectedLesion.relative_size_change ?? "N/A"}</p>
+                  </div>
+                )}
+
+                <LesionOverlay
+                  lesions={dummyLesionData.predictions[0].lesions}
+                  imgWidth={1024}
+                  imgHeight={2048}
+                  onSelectLesion={setSelectedLesion}
+                />
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-1 text-neutral-400 text-xs p-6 text-center h-full min-h-[12rem]">
@@ -329,6 +409,52 @@ export default function DoctorDashboard() {
       </div>
     );
   }
+
+    function LesionOverlay({
+      lesions,
+      imgWidth = 1024,
+      imgHeight = 2048,
+      onSelectLesion
+    }: {
+      lesions: any[];
+      imgWidth?: number;
+      imgHeight?: number;
+      onSelectLesion?: (lesion: any, x: number, y: number) => void;
+    }) {
+      return (
+        <svg
+          viewBox={`0 0 ${imgWidth} ${imgHeight}`}
+          className="absolute top-0 left-0 w-full h-full"
+        >
+          {lesions.map((lesion, idx) => {
+            const coords = lesion.polygon_mask[0];
+            const points = coords
+              .reduce((acc: string[], val: number, i: number, arr: number[]) => {
+                if (i % 2 === 0) {
+                  acc.push(`${val},${arr[i + 1]}`);
+                }
+                return acc;
+              }, [])
+              .join(" ");
+
+            const firstX = coords[0];
+            const firstY = coords[1];
+            return (
+              <g key={idx}>
+                <polygon
+                  points={points}
+                  fill="rgba(255,0,0,0.25)"
+                  stroke="red"
+                  strokeWidth="1"
+                  className="cursor-pointer"
+                  onClick={() => onSelectLesion?.(lesion, firstX, firstY)}
+                />
+              </g>
+            );
+          })}
+        </svg>
+      );
+    }
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
