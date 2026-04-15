@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef,  useCallback, useMemo, } from "react";
 import Logo from "@/components/Logo";
 import {
   Info,
   GitCompare,
   History,
-  Minus,
-  Plus,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import {
+  InPlaceZoomViewport,
+  MAX_ZOOM_SCALE,
+  VISIT_RANGE_CLASS_NAME,
+  type CompareSyncControl,
+} from "@/components/dashboard/InPlaceZoomViewport";
 
 type PatientInfo = {
   firstName: string;
@@ -31,7 +35,6 @@ type ImageRow = {
   fileName: string;
   signedUrl: string;
 };
-
 
 function formatDate(iso: string) {
   try {
@@ -93,192 +96,163 @@ function SignedPhoto({
   );
 }
 
-/** Zoom/pan in the same panel */
-function InPlaceZoomViewport({
-  src,
-  alt,
-  imageKey,
-}: {
-  src: string;
-  alt: string;
-  imageKey: string | number;
-}) {
-  const [scale, setScale] = useState(1);
-  const [failed, setFailed] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  /** After scale changes, keep this content point under the viewport point (ratios 0–1). */
-  const scrollAnchorRef = useRef<{
-    rx: number;
-    ry: number;
-    vx: number;
-    vy: number;
-  } | null>(null);
-
-  useEffect(() => {
-    setScale(1);
-    setFailed(false);
-  }, [imageKey]);
-
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.scrollLeft = 0;
-    el.scrollTop = 0;
-  }, [imageKey]);
-
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    const anchor = scrollAnchorRef.current;
-    scrollAnchorRef.current = null;
-    if (!el || !anchor) return;
-
-    const w = el.clientWidth;
-    const h = el.clientHeight;
-    const sw = el.scrollWidth;
-    const sh = el.scrollHeight;
-    el.scrollLeft = anchor.rx * sw - anchor.vx;
-    el.scrollTop = anchor.ry * sh - anchor.vy;
-
-    const maxL = Math.max(0, sw - w);
-    const maxT = Math.max(0, sh - h);
-    el.scrollLeft = Math.min(maxL, Math.max(0, el.scrollLeft));
-    el.scrollTop = Math.min(maxT, Math.max(0, el.scrollTop));
-  }, [scale]);
-
-  const anchorZoomViewportCenter = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    const sw = el.scrollWidth;
-    const sh = el.scrollHeight;
-    if (sw <= 0 || sh <= 0) return;
-    const vx = el.clientWidth / 2;
-    const vy = el.clientHeight / 2;
-    scrollAnchorRef.current = {
-      rx: (el.scrollLeft + vx) / sw,
-      ry: (el.scrollTop + vy) / sh,
-      vx,
-      vy,
-    };
-  };
-
-  const bumpScale = (delta: number) => {
-    anchorZoomViewportCenter();
-    setScale((s) => Math.min(4, Math.max(1, s + delta)));
-  };
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.12 : 0.12;
-      setScale((s) => {
-        const next = Math.min(4, Math.max(1, s + delta));
-        if (next === s) return s;
-        const sw = el.scrollWidth;
-        const sh = el.scrollHeight;
-        const rect = el.getBoundingClientRect();
-        if (sw > 0 && sh > 0) {
-          const vx = e.clientX - rect.left;
-          const vy = e.clientY - rect.top;
-          scrollAnchorRef.current = {
-            rx: (el.scrollLeft + vx) / sw,
-            ry: (el.scrollTop + vy) / sh,
-            vx,
-            vy,
-          };
-        }
-        return next;
-      });
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
-
-  return (
-    <div className="relative rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200">
-      <div className="flex items-center justify-end gap-1 px-2 py-1.5 bg-neutral-100/90 border-b border-neutral-200 text-xs text-neutral-700">
-        <button
-          type="button"
-          className="p-1 rounded hover:bg-neutral-200 disabled:opacity-35 disabled:pointer-events-none"
-          aria-label="Zoom out"
-          disabled={scale <= 1}
-          onClick={() => bumpScale(-0.25)}
-        >
-          <Minus className="w-4 h-4" />
-        </button>
-        <span className="tabular-nums w-10 text-center">
-          {Math.round(scale * 100)}%
-        </span>
-        <button
-          type="button"
-          className="p-1 rounded hover:bg-neutral-200"
-          aria-label="Zoom in"
-          onClick={() => bumpScale(0.25)}
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          className="ml-1 px-2 py-0.5 rounded hover:bg-neutral-200 text-neutral-600"
-          onClick={() => {
-            scrollAnchorRef.current = null;
-            setScale(1);
-            requestAnimationFrame(() => {
-              containerRef.current?.scrollTo(0, 0);
-            });
-          }}
-        >
-          Reset
-        </button>
-      </div>
-      <div
-        ref={containerRef}
-        className="aspect-[4/3] overflow-auto bg-neutral-50"
-        tabIndex={0}
-      >
-        {!failed ? (
-          <div
-            className="relative block"
-            style={{
-              width: `${100 * scale}%`,
-              height: `${100 * scale}%`,
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={src}
-              alt={alt}
-              className="absolute left-0 top-0 h-full w-full object-contain object-center select-none"
-              draggable={false}
-              onError={() => setFailed(true)}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-1 text-neutral-400 text-xs p-6 text-center h-full min-h-[12rem]">
-            <span>Couldn’t load image</span>
-            <span className="text-[10px]">URL may have expired — refresh the page</span>
-          </div>
-        )}
-      </div>
-      <p className="text-[10px] text-neutral-400 px-2 py-1 border-t border-neutral-100 bg-white">
-        Scroll to pan when zoomed.
-      </p>
-    </div>
-  );
-}
-
 export default function PatientDashboard() {
   const [viewMode, setViewMode] = useState<"compare" | "timeline">("compare");
   const [patient, setPatient] = useState<PatientInfo | null>(null);
   const [images, setImages] = useState<ImageRow[]>([]);
   const [lesions, setLesions] = useState<LesionInfo[]>([]);
+  /** Compare: visit index for left / right panel (visit order = array order). */
   const [leftIdx, setLeftIdx] = useState(0);
   const [rightIdx, setRightIdx] = useState(1);
-  const [timelineIdx, setTimelineIdx] = useState(0);
+  /** Timeline tab only. */
+  const [photoIdx, setPhotoIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  /** Linked zoom/pan for compare mode (both panels). */
+  const leftCompareScrollRef = useRef<HTMLDivElement | null>(null);
+  const rightCompareScrollRef = useRef<HTMLDivElement | null>(null);
+  const compareZoomAnchorRef = useRef<{
+    rx: number;
+    ry: number;
+    vx: number;
+    vy: number;
+  } | null>(null);
+  const [compareScale, setCompareScale] = useState(1);
+  const [compareScroll, setCompareScroll] = useState({ l: 0, t: 0 });
+
+  const handleCompareScroll = useCallback((l: number, t: number) => {
+    setCompareScroll({ l, t });
+  }, []);
+
+  const handleCompareBumpScale = useCallback(
+    (delta: number, el: HTMLDivElement) => {
+      const sw = el.scrollWidth;
+      const sh = el.scrollHeight;
+      if (sw <= 0 || sh <= 0) return;
+      const vx = el.clientWidth / 2;
+      const vy = el.clientHeight / 2;
+      compareZoomAnchorRef.current = {
+        rx: (el.scrollLeft + vx) / sw,
+        ry: (el.scrollTop + vy) / sh,
+        vx,
+        vy,
+      };
+      setCompareScale((s) =>
+        Math.min(MAX_ZOOM_SCALE, Math.max(1, s + delta))
+      );
+    },
+    []
+  );
+
+  const handleCompareWheelZoom = useCallback(
+    (
+      deltaScale: number,
+      el: HTMLDivElement,
+      clientX: number,
+      clientY: number
+    ) => {
+      const sw = el.scrollWidth;
+      const sh = el.scrollHeight;
+      const rect = el.getBoundingClientRect();
+      if (sw <= 0 || sh <= 0) return;
+      const vx = clientX - rect.left;
+      const vy = clientY - rect.top;
+      compareZoomAnchorRef.current = {
+        rx: (el.scrollLeft + vx) / sw,
+        ry: (el.scrollTop + vy) / sh,
+        vx,
+        vy,
+      };
+      setCompareScale((s) => {
+        const next = Math.min(MAX_ZOOM_SCALE, Math.max(1, s + deltaScale));
+        return next === s ? s : next;
+      });
+    },
+    []
+  );
+
+  const handleCompareReset = useCallback(() => {
+    compareZoomAnchorRef.current = null;
+    setCompareScale(1);
+    setCompareScroll({ l: 0, t: 0 });
+    requestAnimationFrame(() => {
+      leftCompareScrollRef.current?.scrollTo(0, 0);
+      rightCompareScrollRef.current?.scrollTo(0, 0);
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    const a = compareZoomAnchorRef.current;
+    compareZoomAnchorRef.current = null;
+    if (!a) return;
+    const apply = (el: HTMLDivElement | null) => {
+      if (!el) return;
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      const sw = el.scrollWidth;
+      const sh = el.scrollHeight;
+      const l = a.rx * sw - a.vx;
+      const t = a.ry * sh - a.vy;
+      const maxL = Math.max(0, sw - w);
+      const maxT = Math.max(0, sh - h);
+      el.scrollLeft = Math.min(maxL, Math.max(0, l));
+      el.scrollTop = Math.min(maxT, Math.max(0, t));
+    };
+    apply(leftCompareScrollRef.current);
+    apply(rightCompareScrollRef.current);
+    const src = leftCompareScrollRef.current;
+    if (src) setCompareScroll({ l: src.scrollLeft, t: src.scrollTop });
+  }, [compareScale]);
+
+  useEffect(() => {
+    setCompareScale(1);
+    setCompareScroll({ l: 0, t: 0 });
+  }, [leftIdx, rightIdx]);
+
+  const leftCompareSync = useMemo(
+    (): CompareSyncControl => ({
+      scale: compareScale,
+      scrollLeft: compareScroll.l,
+      scrollTop: compareScroll.t,
+      onScrollChange: handleCompareScroll,
+      onBumpScale: handleCompareBumpScale,
+      onWheelZoom: handleCompareWheelZoom,
+      onReset: handleCompareReset,
+      scrollContainerRef: leftCompareScrollRef,
+    }),
+    [
+      compareScale,
+      compareScroll.l,
+      compareScroll.t,
+      handleCompareScroll,
+      handleCompareBumpScale,
+      handleCompareWheelZoom,
+      handleCompareReset,
+    ]
+  );
+
+  const rightCompareSync = useMemo(
+    (): CompareSyncControl => ({
+      scale: compareScale,
+      scrollLeft: compareScroll.l,
+      scrollTop: compareScroll.t,
+      onScrollChange: handleCompareScroll,
+      onBumpScale: handleCompareBumpScale,
+      onWheelZoom: handleCompareWheelZoom,
+      onReset: handleCompareReset,
+      scrollContainerRef: rightCompareScrollRef,
+    }),
+    [
+      compareScale,
+      compareScroll.l,
+      compareScroll.t,
+      handleCompareScroll,
+      handleCompareBumpScale,
+      handleCompareWheelZoom,
+      handleCompareReset,
+    ]
+  );
 
   useEffect(() => {
     const loadData = async () => {
@@ -320,6 +294,7 @@ export default function PatientDashboard() {
         const rawLesions = Array.isArray(data.lesions) ? data.lesions : [];
         setLesions(rawLesions as LesionInfo[]);
 
+        setPhotoIdx(0);
         if (list.length >= 2) {
           setLeftIdx(0);
           setRightIdx(1);
@@ -327,7 +302,6 @@ export default function PatientDashboard() {
           setLeftIdx(0);
           setRightIdx(0);
         }
-        setTimelineIdx(0);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load data.");
       } finally {
@@ -338,10 +312,10 @@ export default function PatientDashboard() {
   }, []);
 
   useEffect(() => {
-    setTimelineIdx((i) => {
-      if (images.length === 0) return 0;
-      return Math.min(i, images.length - 1);
-    });
+    const max = Math.max(0, images.length - 1);
+    setPhotoIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
+    setLeftIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
+    setRightIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
   }, [images.length]);
 
   const handleLogout = async () => {
@@ -366,9 +340,9 @@ export default function PatientDashboard() {
     ? `${patient.firstName} ${patient.lastName}`.trim()
     : "—";
 
+  const currentPhoto = images[photoIdx];
   const leftImg = images[leftIdx];
   const rightImg = images[rightIdx];
-  const timelineImg = images[timelineIdx];
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-100 text-neutral-900">
@@ -416,8 +390,8 @@ export default function PatientDashboard() {
               </h2>
               <p className="text-neutral-600 text-sm leading-relaxed">
                 Body photos are taken at each visit so your doctor can track
-                changes over time. You can zoom in on any area and compare two
-                visits side by side to see how specific lesions are changing.
+                changes over time. Compare two visits side by side and use the
+                visit sliders to pick which photo appears on each side.
               </p>
             </div>
           </div>
@@ -470,7 +444,7 @@ export default function PatientDashboard() {
               <p className="text-sm text-neutral-500 mt-0.5">
                 {viewMode === "compare"
                   ? "Select two photos to compare."
-                  : "Step through photos in order with the arrows."}
+                  : "Step through photos in order with the slider."}
               </p>
             </div>
             <div className="flex gap-2">
@@ -508,148 +482,108 @@ export default function PatientDashboard() {
               </p>
             )}
 
-            {viewMode === "compare" && images.length > 0 && (
-              <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                {leftImg?.signedUrl ? (
-                  <InPlaceZoomViewport
-                    imageKey={`left-${leftIdx}`}
-                    src={leftImg.signedUrl}
-                    alt={leftImg.fileName}
-                  />
-                ) : (
-                  <div className="aspect-[4/3] bg-neutral-100 rounded-xl border border-neutral-200 flex flex-col items-center justify-center gap-1">
-                    <span className="text-neutral-400 text-sm">Body photo</span>
-                    <span className="text-neutral-400 text-xs">
-                      No image selected
-                    </span>
+            {viewMode === "compare" && images.length > 0 && leftImg && rightImg && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+                <div className="space-y-3 min-w-0">
+                  {leftImg.signedUrl ? (
+                    <InPlaceZoomViewport
+                      imageKey={`left-${leftIdx}-${leftImg.fileName}`}
+                      src={leftImg.signedUrl}
+                      alt={leftImg.fileName}
+                      compareSync={leftCompareSync}
+                    />
+                  ) : (
+                    <div className="aspect-[4/3] bg-neutral-100 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-400 text-sm">
+                      No image
+                    </div>
+                  )}
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50/90 px-3 py-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2 text-xs font-medium text-neutral-800">
+                      <span>Left — visit</span>
+                      <span className="tabular-nums text-neutral-600 shrink-0">
+                        {leftIdx + 1} / {images.length}
+                      </span>
+                    </div>
+                    <label htmlFor="compare-left-visit" className="sr-only">
+                      Choose visit for left compare panel
+                    </label>
+                    <input
+                      id="compare-left-visit"
+                      type="range"
+                      min={0}
+                      max={Math.max(0, images.length - 1)}
+                      step={1}
+                      value={leftIdx}
+                      onChange={(e) =>
+                        setLeftIdx(Number.parseInt(e.target.value, 10))
+                      }
+                      className={VISIT_RANGE_CLASS_NAME}
+                    />
+                    <div className="flex justify-between text-[10px] text-neutral-500">
+                      <span>Earlier</span>
+                      <span>Later</span>
+                    </div>
+                    <p className="text-xs font-medium text-neutral-900 truncate pt-1 border-t border-neutral-200/70">
+                      {leftImg.fileName}
+                    </p>
                   </div>
-                )}
-                <div>
-                  <p className="font-semibold text-neutral-900">
-                    {leftImg?.fileName ?? "—"}
-                  </p>
-                  <p className="text-sm text-neutral-500">Linked photo</p>
-                  <p className="text-sm text-neutral-700 mt-1">Size: —</p>
-                  <p className="text-sm text-neutral-700">Area: —</p>
                 </div>
-              </div>
-              <div className="space-y-3">
-                {rightImg?.signedUrl ? (
-                  <InPlaceZoomViewport
-                    imageKey={`right-${rightIdx}`}
-                    src={rightImg.signedUrl}
-                    alt={rightImg.fileName}
-                  />
-                ) : (
-                  <div className="aspect-[4/3] bg-neutral-100 rounded-xl border border-neutral-200 flex flex-col items-center justify-center gap-1">
-                    <span className="text-neutral-400 text-sm">Body photo</span>
-                    <span className="text-neutral-400 text-xs">
-                      No image selected
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <p className="font-semibold text-neutral-900">
-                    {rightImg?.fileName ?? "—"}
-                  </p>
-                  <p className="text-sm text-neutral-500">Linked photo</p>
-                  <p className="text-sm text-neutral-700 mt-1">Size: —</p>
-                  <p className="text-sm text-neutral-700">Area: —</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm font-medium text-neutral-600 mb-3">
-                    Select left photo
-                  </p>
-                  <div className="flex gap-3 overflow-x-auto pb-2">
-                    {images.map((img, i) => (
-                      <button
-                        key={img.fileName + i}
-                        type="button"
-                        onClick={() => setLeftIdx(i)}
-                        className={`shrink-0 w-28 rounded-xl border-2 overflow-hidden transition-colors ${
-                          leftIdx === i
-                            ? "border-teal-500 bg-teal-50"
-                            : "border-neutral-200 hover:border-neutral-300 bg-white"
-                        }`}
-                      >
-                        <div className="aspect-square bg-neutral-100 relative">
-                          {img.signedUrl ? (
-                            <SignedPhoto
-                              src={img.signedUrl}
-                              alt=""
-                              className="w-full h-full object-cover pointer-events-none"
-                            />
-                          ) : (
-                            <span className="text-neutral-400 text-xs flex items-center justify-center h-full">
-                              Photo
-                            </span>
-                          )}
-                        </div>
-                        <div className="p-2 text-center">
-                          <p className="text-xs font-medium truncate">
-                            {img.fileName}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-neutral-600 mb-3">
-                    Select right photo
-                  </p>
-                  <div className="flex gap-3 overflow-x-auto pb-2">
-                    {images.map((img, i) => (
-                      <button
-                        key={`r-${img.fileName}-${i}`}
-                        type="button"
-                        onClick={() => setRightIdx(i)}
-                        className={`shrink-0 w-28 rounded-xl border-2 overflow-hidden transition-colors ${
-                          rightIdx === i
-                            ? "border-teal-500 bg-teal-50"
-                            : "border-neutral-200 hover:border-neutral-300 bg-white"
-                        }`}
-                      >
-                        <div className="aspect-square bg-neutral-100 relative">
-                          {img.signedUrl ? (
-                            <SignedPhoto
-                              src={img.signedUrl}
-                              alt=""
-                              className="w-full h-full object-cover pointer-events-none"
-                            />
-                          ) : (
-                            <span className="text-neutral-400 text-xs flex items-center justify-center h-full">
-                              Photo
-                            </span>
-                          )}
-                        </div>
-                        <div className="p-2 text-center">
-                          <p className="text-xs font-medium truncate">
-                            {img.fileName}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                <div className="space-y-3 min-w-0">
+                  {rightImg.signedUrl ? (
+                    <InPlaceZoomViewport
+                      imageKey={`right-${rightIdx}-${rightImg.fileName}`}
+                      src={rightImg.signedUrl}
+                      alt={rightImg.fileName}
+                      compareSync={rightCompareSync}
+                    />
+                  ) : (
+                    <div className="aspect-[4/3] bg-neutral-100 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-400 text-sm">
+                      No image
+                    </div>
+                  )}
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50/90 px-3 py-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2 text-xs font-medium text-neutral-800">
+                      <span>Right — visit</span>
+                      <span className="tabular-nums text-neutral-600 shrink-0">
+                        {rightIdx + 1} / {images.length}
+                      </span>
+                    </div>
+                    <label htmlFor="compare-right-visit" className="sr-only">
+                      Choose visit for right compare panel
+                    </label>
+                    <input
+                      id="compare-right-visit"
+                      type="range"
+                      min={0}
+                      max={Math.max(0, images.length - 1)}
+                      step={1}
+                      value={rightIdx}
+                      onChange={(e) =>
+                        setRightIdx(Number.parseInt(e.target.value, 10))
+                      }
+                      className={VISIT_RANGE_CLASS_NAME}
+                    />
+                    <div className="flex justify-between text-[10px] text-neutral-500">
+                      <span>Earlier</span>
+                      <span>Later</span>
+                    </div>
+                    <p className="text-xs font-medium text-neutral-900 truncate pt-1 border-t border-neutral-200/70">
+                      {rightImg.fileName}
+                    </p>
                   </div>
                 </div>
               </div>
-              </>
             )}
 
-            {viewMode === "timeline" && images.length > 0 && timelineImg && (
+            {viewMode === "timeline" && images.length > 0 && currentPhoto && (
               <div className="rounded-2xl border border-neutral-200 bg-gradient-to-b from-white to-neutral-50/90 overflow-hidden">
                 <div className="px-3 pt-3 pb-2 border-b border-neutral-100 flex items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold text-neutral-800">
                     Timeline
                   </h3>
                   <span className="text-xs tabular-nums text-neutral-500 shrink-0">
-                    {timelineIdx + 1} / {images.length}
+                    {photoIdx + 1} / {images.length}
                   </span>
                 </div>
 
@@ -662,9 +596,9 @@ export default function PatientDashboard() {
                       <button
                         key={`tl-thumb-${img.fileName}-${i}`}
                         type="button"
-                        onClick={() => setTimelineIdx(i)}
+                        onClick={() => setPhotoIdx(i)}
                         className={`shrink-0 w-14 sm:w-16 rounded-lg border-2 overflow-hidden transition-all ${
-                          timelineIdx === i
+                          photoIdx === i
                             ? "border-teal-500 shadow-sm ring-2 ring-teal-100/80 scale-[1.02]"
                             : "border-neutral-200/80 hover:border-neutral-300 opacity-90 hover:opacity-100"
                         }`}
@@ -691,8 +625,8 @@ export default function PatientDashboard() {
                 <div className="flex items-stretch gap-1 sm:gap-2 px-1 sm:px-2 pb-3">
                   <button
                     type="button"
-                    onClick={() => setTimelineIdx((i) => Math.max(0, i - 1))}
-                    disabled={timelineIdx <= 0}
+                    onClick={() => setPhotoIdx((i) => Math.max(0, i - 1))}
+                    disabled={photoIdx <= 0}
                     className="shrink-0 self-center flex h-11 w-10 sm:w-12 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-800 shadow-sm hover:bg-neutral-50 hover:border-teal-200 disabled:opacity-35 disabled:pointer-events-none"
                     aria-label="Previous photo"
                   >
@@ -702,9 +636,9 @@ export default function PatientDashboard() {
                   <div className="flex-1 min-w-0 flex justify-center">
                     <div className="w-full max-w-lg sm:max-w-xl">
                       <InPlaceZoomViewport
-                        imageKey={`tl-${timelineIdx}-${timelineImg.fileName}`}
-                        src={timelineImg.signedUrl}
-                        alt={timelineImg.fileName}
+                        imageKey={`tl-${photoIdx}-${currentPhoto.fileName}`}
+                        src={currentPhoto.signedUrl}
+                        alt={currentPhoto.fileName}
                       />
                     </div>
                   </div>
@@ -712,11 +646,11 @@ export default function PatientDashboard() {
                   <button
                     type="button"
                     onClick={() =>
-                      setTimelineIdx((i) =>
+                      setPhotoIdx((i) =>
                         Math.min(images.length - 1, i + 1)
                       )
                     }
-                    disabled={timelineIdx >= images.length - 1}
+                    disabled={photoIdx >= images.length - 1}
                     className="shrink-0 self-center flex h-11 w-10 sm:w-12 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-800 shadow-sm hover:bg-neutral-50 hover:border-teal-200 disabled:opacity-35 disabled:pointer-events-none"
                     aria-label="Next photo"
                   >
@@ -726,7 +660,7 @@ export default function PatientDashboard() {
 
                 <div className="px-3 py-2.5 border-t border-neutral-100 bg-white/80 flex items-center gap-2 min-h-[2.75rem]">
                   <p className="text-sm font-medium text-neutral-900 truncate min-w-0 flex-1">
-                    {timelineImg.fileName}
+                    {currentPhoto.fileName}
                   </p>
                 </div>
               </div>
