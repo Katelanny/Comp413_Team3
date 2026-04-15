@@ -296,6 +296,17 @@ export default function DoctorDashboard() {
       p.mrn.toString().includes(searchQuery)
   );
 
+  /** Local-only until backend has PATCH diagnosis access. */
+  const handleDiagnosisAccessToggle = () => {
+    if (!patientDetails) return;
+    setPatientDetails((prev: any) =>
+      prev
+        ? { ...prev, hasAccessToDiagnosis: !Boolean(prev.hasAccessToDiagnosis) }
+        : prev
+    );
+    // TODO: call doctor endpoint when ready
+  };
+
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -399,10 +410,53 @@ export default function DoctorDashboard() {
                   Phone: {patientDetails?.phone ?? "N/A"} ||
                   Gender: {patientDetails?.gender ?? "N/A"}
                 </p>
-                <p>
-                  Diagnosis Access:{" "}
-                  {patientDetails?.hasAccessToDiagnosis ? "Yes" : "No"}
-                </p>
+                <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 max-w-2xl">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-neutral-900">
+                      Diagnosis access (patient portal)
+                    </p>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      When on, this patient can see diagnosis-related details in
+                      their own dashboard.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span
+                      className={`text-sm font-medium tabular-nums ${
+                        patientDetails?.hasAccessToDiagnosis
+                          ? "text-teal-700"
+                          : "text-neutral-500"
+                      }`}
+                    >
+                      {patientDetails == null
+                        ? "…"
+                        : patientDetails.hasAccessToDiagnosis
+                          ? "On"
+                          : "Off"}
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={Boolean(patientDetails?.hasAccessToDiagnosis)}
+                      aria-label="Toggle diagnosis access for patient portal"
+                      disabled={patientDetails == null || imagesLoading}
+                      onClick={handleDiagnosisAccessToggle}
+                      className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        patientDetails?.hasAccessToDiagnosis
+                          ? "bg-teal-600"
+                          : "bg-neutral-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          patientDetails?.hasAccessToDiagnosis
+                            ? "translate-x-6"
+                            : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Comparison cards */}
