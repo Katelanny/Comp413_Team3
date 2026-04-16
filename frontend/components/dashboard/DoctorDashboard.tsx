@@ -22,6 +22,10 @@ export default function DoctorDashboard() {
   const [imagesLoading, setImagesLoading] = useState(false);
   const [lesions, setLesions] = useState<any[]>([]);
   const [patientDetails, setPatientDetails] = useState<any>(null);
+  const [diagnosisAccessSaving, setDiagnosisAccessSaving] = useState(false);
+  const [diagnosisAccessError, setDiagnosisAccessError] = useState<string | null>(
+    null
+  );
 
   const leftCompareScrollRef = useRef<HTMLDivElement | null>(null);
   const rightCompareScrollRef = useRef<HTMLDivElement | null>(null);
@@ -285,6 +289,10 @@ export default function DoctorDashboard() {
   }, [selectedPatient]);
 
   useEffect(() => {
+    setDiagnosisAccessError(null);
+  }, [selectedPatient?.id]);
+
+  useEffect(() => {
     const max = Math.max(0, images.length - 1);
     setLeftIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
     setRightIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
@@ -296,15 +304,57 @@ export default function DoctorDashboard() {
       p.mrn.toString().includes(searchQuery)
   );
 
-  /** Local-only until backend has PATCH diagnosis access. */
-  const handleDiagnosisAccessToggle = () => {
-    if (!patientDetails) return;
-    setPatientDetails((prev: any) =>
-      prev
-        ? { ...prev, hasAccessToDiagnosis: !Boolean(prev.hasAccessToDiagnosis) }
-        : prev
-    );
-    // TODO: call doctor endpoint when ready
+  const handleDiagnosisAccessToggle = async () => {
+    if (!patientDetails || !selectedPatient || diagnosisAccessSaving) return;
+    const next = !Boolean(patientDetails.hasAccessToDiagnosis);
+    setDiagnosisAccessError(null);
+    setDiagnosisAccessSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:5023/api/doctor/patients/${selectedPatient.id}/diagnosis-access`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ hasAccess: next }),
+        }
+      );
+
+      if (!res.ok) {
+        let message = `Could not update (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body && typeof body.error === "string") message = body.error;
+        } catch {
+          /* ignore */
+        }
+        throw new Error(message);
+      }
+
+      const data = (await res.json()) as {
+        hasAccessToDiagnosis?: boolean;
+        HasAccessToDiagnosis?: boolean;
+      };
+      const updated =
+        typeof data.hasAccessToDiagnosis === "boolean"
+          ? data.hasAccessToDiagnosis
+          : typeof data.HasAccessToDiagnosis === "boolean"
+            ? data.HasAccessToDiagnosis
+            : next;
+
+      setPatientDetails((prev: any) =>
+        prev ? { ...prev, hasAccessToDiagnosis: updated } : prev
+      );
+    } catch (e) {
+      setDiagnosisAccessError(
+        e instanceof Error ? e.message : "Update failed."
+      );
+    } finally {
+      setDiagnosisAccessSaving(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -410,52 +460,69 @@ export default function DoctorDashboard() {
                   Phone: {patientDetails?.phone ?? "N/A"} ||
                   Gender: {patientDetails?.gender ?? "N/A"}
                 </p>
-                <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 max-w-2xl">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-neutral-900">
-                      Diagnosis access (patient portal)
-                    </p>
-                    <p className="text-xs text-neutral-500 mt-0.5">
-                      When on, this patient can see diagnosis-related details in
-                      their own dashboard.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span
-                      className={`text-sm font-medium tabular-nums ${
-                        patientDetails?.hasAccessToDiagnosis
-                          ? "text-teal-700"
-                          : "text-neutral-500"
-                      }`}
-                    >
-                      {patientDetails == null
-                        ? "…"
-                        : patientDetails.hasAccessToDiagnosis
-                          ? "On"
-                          : "Off"}
-                    </span>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={Boolean(patientDetails?.hasAccessToDiagnosis)}
-                      aria-label="Toggle diagnosis access for patient portal"
-                      disabled={patientDetails == null || imagesLoading}
-                      onClick={handleDiagnosisAccessToggle}
-                      className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        patientDetails?.hasAccessToDiagnosis
-                          ? "bg-teal-600"
-                          : "bg-neutral-300"
-                      }`}
-                    >
+                <div className="mt-4 max-w-2xl space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-neutral-900">
+                        Diagnosis access (patient portal)
+                      </p>
+                      <p className="text-xs text-neutral-500 mt-0.5">
+                        When on, this patient can see diagnosis-related details in
+                        their own dashboard. Changes save to the server.
+                      </p>
+                      {diagnosisAccessSaving && (
+                        <p className="text-xs text-teal-600 mt-1">Saving…</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
                       <span
-                        className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        className={`text-sm font-medium tabular-nums ${
                           patientDetails?.hasAccessToDiagnosis
-                            ? "translate-x-6"
-                            : "translate-x-0.5"
+                            ? "text-teal-700"
+                            : "text-neutral-500"
                         }`}
-                      />
-                    </button>
+                      >
+                        {patientDetails == null
+                          ? "…"
+                          : patientDetails.hasAccessToDiagnosis
+                            ? "On"
+                            : "Off"}
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-busy={diagnosisAccessSaving}
+                        aria-checked={Boolean(
+                          patientDetails?.hasAccessToDiagnosis
+                        )}
+                        aria-label="Toggle diagnosis access for patient portal"
+                        disabled={
+                          patientDetails == null ||
+                          imagesLoading ||
+                          diagnosisAccessSaving
+                        }
+                        onClick={() => void handleDiagnosisAccessToggle()}
+                        className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          patientDetails?.hasAccessToDiagnosis
+                            ? "bg-teal-600"
+                            : "bg-neutral-300"
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            patientDetails?.hasAccessToDiagnosis
+                              ? "translate-x-6"
+                              : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
+                  {diagnosisAccessError && (
+                    <p className="text-sm text-red-600 px-1" role="alert">
+                      {diagnosisAccessError}
+                    </p>
+                  )}
                 </div>
               </div>
 
