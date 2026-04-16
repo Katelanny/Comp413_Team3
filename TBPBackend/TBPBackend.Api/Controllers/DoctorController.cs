@@ -164,6 +164,28 @@ public class DoctorController : ControllerBase
         return Ok(doctor);
     }
 
+    [HttpPatch("patients/{patientId:long}/diagnosis-access")]
+    [Authorize(Policy = "DoctorOnly")]
+    public async Task<ActionResult> SetPatientDiagnosisAccess(long patientId, [FromBody] SetDiagnosisAccessDto request)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.AppUserId == userId);
+        if (doctor is null) return NotFound(new { error = "No doctor profile found." });
+
+        var hasVisit = await _db.Visits.AnyAsync(v => v.DoctorId == doctor.Id && v.PatientId == patientId);
+        if (!hasVisit) return Forbid();
+
+        var patient = await _db.Patients.FirstOrDefaultAsync(p => p.Id == patientId);
+        if (patient is null) return NotFound(new { error = "Patient not found." });
+
+        patient.HasAccessToDiagnosis = request.HasAccess;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { patientId = patient.Id, hasAccessToDiagnosis = patient.HasAccessToDiagnosis });
+    }
+
     private string? GetUserId()
     {
         return User.FindFirstValue(JwtRegisteredClaimNames.Sub)

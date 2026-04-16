@@ -25,3 +25,5 @@ next-env.d.ts
 *.user
 *.suo
 *.log
+
+/scripts
