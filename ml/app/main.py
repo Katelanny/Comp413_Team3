@@ -5,10 +5,14 @@ from app.models.lesion_model import LesionModel
 from app.models.pose_model import PoseModel
 from app.api.routes import router
 from app.config import settings
-
+from download_models import download_model_files
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Downloading the weights first
+    print("Downloading model files from GCS...")
+    download_model_files()
+    print("Download complete.")
     # Initialize Lesion Model using settings
     app.state.lesion_model = LesionModel(
         config_path=settings.lesion_config_path,
