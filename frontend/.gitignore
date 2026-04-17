@@ -22,6 +22,9 @@
 
 # misc
 .DS_Store
+screenshot.png
+screenshot-doctor.png
+screenshot-patient.png
 *.pem
 
 # debug
