@@ -11,5 +11,10 @@ httpx
 torch
 torchvision
 
+<<<<<<< HEAD
 ## Install dectecteron2 after install requirements, since dectereon2 requires torch: 
 # pip install  --no-build-isolation 'git+https://github.com/facebookresearch/detectron2.git'
+=======
+
+
+>>>>>>> posedetection

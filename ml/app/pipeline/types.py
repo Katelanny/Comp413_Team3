@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 import numpy as np
 from pydantic import BaseModel, HttpUrl
 
@@ -29,6 +30,9 @@ class Lesion(BaseModel):
     box: BoundingBox
     score: float
     polygon_mask: list[list[float]]
+
+    u_coord: float | None = None
+    v_coord: float | None = None
 
     anatomical_site: str | None = None
     prev_lesion_id:  str | None = None
@@ -82,5 +86,13 @@ class LesionAnalysis:
 
 @dataclass
 class PoseResult:
-    img_id: str
-    keypoints: list[list[float]] | None
+    """
+    Storing native array outputs from DensePose
+    """
+    is_empty: bool = True
+    patient_box: Optional[np.ndarray] = None #[x1, y1, x2, y2]
+    I_matrix: Optional[np.ndarray] = None #Body part segmentation
+    U_matrix: Optional[np.ndarray] = None #U coordinate map
+    V_matrix: Optional[np.ndarray] = None #V coordinate map
+
+
