@@ -6,6 +6,8 @@ from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from densepose import add_densepose_config
 
+logger = logging.getLogger(__name__)
+
 
 class PoseModel:
     def __init__(self, config_path: str, weights_path: str, device: str = "cuda"):
@@ -78,12 +80,14 @@ class PoseModel:
 
                 # Extracting highest confidence detection
                 patient_box = instances.pred_boxes.tensor.cpu().numpy()[0] # [x1, y1, x2, y2]
-                dp_result = instances.pred_densepose[0].cpu()
+                dp_results = instances.pred_densepose
 
                 #Extracting matrices mapping 3D surface
-                I_matrix = dp_result.labels.cpu().numpy()
-                U_matrix = dp_result.uv[0].cpu().numpy()
-                V_matrix = dp_result.uv[1].cpu().numpy()
+                I_matrix = dp_results.fine_segm[0].cpu().numpy()
+                U_matrix = dp_results.u[0].cpu().numpy()
+                V_matrix = dp_results.v[0].cpu().numpy()
+
+                I_matrix = I_matrix.argmax(axis=0)
 
                 # Appending results
                 pose_results.append(PoseResult(

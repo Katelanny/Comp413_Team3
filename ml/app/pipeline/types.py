@@ -31,6 +31,9 @@ class Lesion(BaseModel):
     score: float
     polygon_mask: list[list[float]]
 
+    u_coord: float | None = None
+    v_coord: float | None = None
+
     anatomical_site: str | None = None
     prev_lesion_id:  str | None = None
     relative_size_change:  float | None = None

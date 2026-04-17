@@ -16,8 +16,8 @@ async def lifespan(app: FastAPI):
 
     # TODO: update
     app.state.pose_model = PoseModel(
-        config_path="path/to/pose_config.yaml",
-        weights_path="path/to/pose_model.pth",
+        config_path="models/pose/pose_config.yaml",
+        weights_path="models/pose/model_final_162be9.pkl",
     )
 
     yield  # app runs here
