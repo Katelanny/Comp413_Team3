@@ -46,7 +46,7 @@ async def run_pipeline(
     # maybe don't mutate lesion_analysis and return new obj? :
 
     # 2. pose detection, mutates lesion_analysis
-    # TODO: run_pose_detection(valid_images, lesion_analysis, pose_model)
+    run_pose_detection(valid_images, lesion_analysis, pose_model)
 
     # 3. lesion matching by time, mutates lesion_analysis
     run_lesion_matching_by_time(lesion_analysis)
