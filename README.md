@@ -6,8 +6,8 @@
 - [Repo Structure](#repo-structure)
 - [Installation](#installation)
 - [Data](#data)
-- [Frontend] (#frontend)
-- [Backend] (#backend)
+- [Frontend](#frontend)
+- [Backend](#backend)
 - [Modeling](#modeling)
 
 ## Introduction
@@ -82,4 +82,4 @@ This project has a backend component. To learn more about the frontend and how t
 
 This project conducts lession detection, pose detection, and time change on lession. To learn more about the model and how to run it, click on the link below to navigate to their respective README files nested within the mlg subdirectory. 
 
-- [YOLO README](ml/README.md)
+- [ML README](ml/README.md)
