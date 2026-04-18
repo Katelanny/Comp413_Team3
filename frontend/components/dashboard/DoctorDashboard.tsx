@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef,  useCallback, useMemo, } from "react";
 import Logo from "@/components/Logo";
 import {
-  Search,
-  Minus,
-  Plus,
-  User,
-} from "lucide-react";
+  InPlaceZoomViewport,
+  MAX_ZOOM_SCALE,
+  VISIT_RANGE_CLASS_NAME,
+  type CompareSyncControl,
+} from "@/components/dashboard/InPlaceZoomViewport";
+import { Search, User } from "lucide-react";
 
 export default function DoctorDashboard() {
   const [patients, setPatients] = useState<any[]>([]);
@@ -21,16 +22,165 @@ export default function DoctorDashboard() {
   const [imagesLoading, setImagesLoading] = useState(false);
   const [lesions, setLesions] = useState<any[]>([]);
   const [patientDetails, setPatientDetails] = useState<any>(null);
-  
+  const [diagnosisAccessSaving, setDiagnosisAccessSaving] = useState(false);
+  const [diagnosisAccessError, setDiagnosisAccessError] = useState<string | null>(
+    null
+  );
+
+  const leftCompareScrollRef = useRef<HTMLDivElement | null>(null);
+  const rightCompareScrollRef = useRef<HTMLDivElement | null>(null);
+  const compareZoomAnchorRef = useRef<{
+    rx: number;
+    ry: number;
+    vx: number;
+    vy: number;
+  } | null>(null);
+  const [compareScale, setCompareScale] = useState(1);
+  const [compareScroll, setCompareScroll] = useState({ l: 0, t: 0 });
+
   function findLesionForImage(img: any, lesions: any[]) {
+    if (!img) return undefined;
     return lesions.find(
       (l) =>
         new Date(l.dateRecorded).toDateString() ===
         new Date(img.dateTaken).toDateString()
     );
   }
-    const leftMetrics = findLesionForImage(images[leftIdx], lesions);
+  const leftMetrics = findLesionForImage(images[leftIdx], lesions);
   const rightMetrics = findLesionForImage(images[rightIdx], lesions);
+
+  const handleCompareScroll = useCallback((l: number, t: number) => {
+    setCompareScroll({ l, t });
+  }, []);
+
+  const handleCompareBumpScale = useCallback(
+    (delta: number, el: HTMLDivElement) => {
+      const sw = el.scrollWidth;
+      const sh = el.scrollHeight;
+      if (sw <= 0 || sh <= 0) return;
+      const vx = el.clientWidth / 2;
+      const vy = el.clientHeight / 2;
+      compareZoomAnchorRef.current = {
+        rx: (el.scrollLeft + vx) / sw,
+        ry: (el.scrollTop + vy) / sh,
+        vx,
+        vy,
+      };
+      setCompareScale((s) =>
+        Math.min(MAX_ZOOM_SCALE, Math.max(1, s + delta))
+      );
+    },
+    []
+  );
+
+  const handleCompareWheelZoom = useCallback(
+    (
+      deltaScale: number,
+      el: HTMLDivElement,
+      clientX: number,
+      clientY: number
+    ) => {
+      const sw = el.scrollWidth;
+      const sh = el.scrollHeight;
+      const rect = el.getBoundingClientRect();
+      if (sw <= 0 || sh <= 0) return;
+      const vx = clientX - rect.left;
+      const vy = clientY - rect.top;
+      compareZoomAnchorRef.current = {
+        rx: (el.scrollLeft + vx) / sw,
+        ry: (el.scrollTop + vy) / sh,
+        vx,
+        vy,
+      };
+      setCompareScale((s) => {
+        const next = Math.min(MAX_ZOOM_SCALE, Math.max(1, s + deltaScale));
+        return next === s ? s : next;
+      });
+    },
+    []
+  );
+
+  const handleCompareReset = useCallback(() => {
+    compareZoomAnchorRef.current = null;
+    setCompareScale(1);
+    setCompareScroll({ l: 0, t: 0 });
+    requestAnimationFrame(() => {
+      leftCompareScrollRef.current?.scrollTo(0, 0);
+      rightCompareScrollRef.current?.scrollTo(0, 0);
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    const a = compareZoomAnchorRef.current;
+    compareZoomAnchorRef.current = null;
+    if (!a) return;
+    const apply = (el: HTMLDivElement | null) => {
+      if (!el) return;
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      const sw = el.scrollWidth;
+      const sh = el.scrollHeight;
+      const l = a.rx * sw - a.vx;
+      const t = a.ry * sh - a.vy;
+      const maxL = Math.max(0, sw - w);
+      const maxT = Math.max(0, sh - h);
+      el.scrollLeft = Math.min(maxL, Math.max(0, l));
+      el.scrollTop = Math.min(maxT, Math.max(0, t));
+    };
+    apply(leftCompareScrollRef.current);
+    apply(rightCompareScrollRef.current);
+    const src = leftCompareScrollRef.current;
+    if (src) setCompareScroll({ l: src.scrollLeft, t: src.scrollTop });
+  }, [compareScale]);
+
+  useEffect(() => {
+    setCompareScale(1);
+    setCompareScroll({ l: 0, t: 0 });
+  }, [leftIdx, rightIdx]);
+
+  const leftCompareSync = useMemo(
+    (): CompareSyncControl => ({
+      scale: compareScale,
+      scrollLeft: compareScroll.l,
+      scrollTop: compareScroll.t,
+      onScrollChange: handleCompareScroll,
+      onBumpScale: handleCompareBumpScale,
+      onWheelZoom: handleCompareWheelZoom,
+      onReset: handleCompareReset,
+      scrollContainerRef: leftCompareScrollRef,
+    }),
+    [
+      compareScale,
+      compareScroll.l,
+      compareScroll.t,
+      handleCompareScroll,
+      handleCompareBumpScale,
+      handleCompareWheelZoom,
+      handleCompareReset,
+    ]
+  );
+
+  const rightCompareSync = useMemo(
+    (): CompareSyncControl => ({
+      scale: compareScale,
+      scrollLeft: compareScroll.l,
+      scrollTop: compareScroll.t,
+      onScrollChange: handleCompareScroll,
+      onBumpScale: handleCompareBumpScale,
+      onWheelZoom: handleCompareWheelZoom,
+      onReset: handleCompareReset,
+      scrollContainerRef: rightCompareScrollRef,
+    }),
+    [
+      compareScale,
+      compareScroll.l,
+      compareScroll.t,
+      handleCompareScroll,
+      handleCompareBumpScale,
+      handleCompareWheelZoom,
+      handleCompareReset,
+    ]
+  );
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -138,11 +288,74 @@ export default function DoctorDashboard() {
     fetchPatientDetails();
   }, [selectedPatient]);
 
+  useEffect(() => {
+    setDiagnosisAccessError(null);
+  }, [selectedPatient?.id]);
+
+  useEffect(() => {
+    const max = Math.max(0, images.length - 1);
+    setLeftIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
+    setRightIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
+  }, [images.length]);
+
   const filteredPatients = patients.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.mrn.toString().includes(searchQuery)
   );
+
+  const handleDiagnosisAccessToggle = async () => {
+    if (!patientDetails || !selectedPatient || diagnosisAccessSaving) return;
+    const next = !Boolean(patientDetails.hasAccessToDiagnosis);
+    setDiagnosisAccessError(null);
+    setDiagnosisAccessSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:5023/api/doctor/patients/${selectedPatient.id}/diagnosis-access`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ hasAccess: next }),
+        }
+      );
+
+      if (!res.ok) {
+        let message = `Could not update (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body && typeof body.error === "string") message = body.error;
+        } catch {
+          /* ignore */
+        }
+        throw new Error(message);
+      }
+
+      const data = (await res.json()) as {
+        hasAccessToDiagnosis?: boolean;
+        HasAccessToDiagnosis?: boolean;
+      };
+      const updated =
+        typeof data.hasAccessToDiagnosis === "boolean"
+          ? data.hasAccessToDiagnosis
+          : typeof data.HasAccessToDiagnosis === "boolean"
+            ? data.HasAccessToDiagnosis
+            : next;
+
+      setPatientDetails((prev: any) =>
+        prev ? { ...prev, hasAccessToDiagnosis: updated } : prev
+      );
+    } catch (e) {
+      setDiagnosisAccessError(
+        e instanceof Error ? e.message : "Update failed."
+      );
+    } finally {
+      setDiagnosisAccessSaving(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -161,174 +374,6 @@ export default function DoctorDashboard() {
       window.location.href = "/";
     }
   };
-
-  function InPlaceZoomViewport({ src, alt, imageKey,}: { src: string; alt: string; imageKey: string | number;}) {
-    const [scale, setScale] = useState(1);
-    const [failed, setFailed] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const scrollAnchorRef = useRef<{
-      rx: number;
-      ry: number;
-      vx: number;
-      vy: number;
-    } | null>(null);
-
-    useEffect(() => {
-      setScale(1);
-      setFailed(false);
-    }, [imageKey]);
-
-    useLayoutEffect(() => {
-      const el = containerRef.current;
-      if (!el) return;
-      el.scrollLeft = 0;
-      el.scrollTop = 0;
-    }, [imageKey]);
-
-    useLayoutEffect(() => {
-      const el = containerRef.current;
-      const anchor = scrollAnchorRef.current;
-      scrollAnchorRef.current = null;
-      if (!el || !anchor) return;
-
-      const w = el.clientWidth;
-      const h = el.clientHeight;
-      const sw = el.scrollWidth;
-      const sh = el.scrollHeight;
-      el.scrollLeft = anchor.rx * sw - anchor.vx;
-      el.scrollTop = anchor.ry * sh - anchor.vy;
-
-      const maxL = Math.max(0, sw - w);
-      const maxT = Math.max(0, sh - h);
-      el.scrollLeft = Math.min(maxL, Math.max(0, el.scrollLeft));
-      el.scrollTop = Math.min(maxT, Math.max(0, el.scrollTop));
-    }, [scale]);
-
-    const anchorZoomViewportCenter = () => {
-      const el = containerRef.current;
-      if (!el) return;
-      const sw = el.scrollWidth;
-      const sh = el.scrollHeight;
-      if (sw <= 0 || sh <= 0) return;
-      const vx = el.clientWidth / 2;
-      const vy = el.clientHeight / 2;
-      scrollAnchorRef.current = {
-        rx: (el.scrollLeft + vx) / sw,
-        ry: (el.scrollTop + vy) / sh,
-        vx,
-        vy,
-      };
-    };
-
-    const bumpScale = (delta: number) => {
-      anchorZoomViewportCenter();
-      setScale((s) => Math.min(4, Math.max(1, s + delta)));
-    };
-
-    useEffect(() => {
-      const el = containerRef.current;
-      if (!el) return;
-      const onWheel = (e: WheelEvent) => {
-        if (!e.ctrlKey && !e.metaKey) return;
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.12 : 0.12;
-        setScale((s) => {
-          const next = Math.min(4, Math.max(1, s + delta));
-          if (next === s) return s;
-          const sw = el.scrollWidth;
-          const sh = el.scrollHeight;
-          const rect = el.getBoundingClientRect();
-          if (sw > 0 && sh > 0) {
-            const vx = e.clientX - rect.left;
-            const vy = e.clientY - rect.top;
-            scrollAnchorRef.current = {
-              rx: (el.scrollLeft + vx) / sw,
-              ry: (el.scrollTop + vy) / sh,
-              vx,
-              vy,
-            };
-          }
-          return next;
-        });
-      };
-      el.addEventListener("wheel", onWheel, { passive: false });
-      return () => el.removeEventListener("wheel", onWheel);
-    }, []);
-
-    
-
-    return (
-      <div className="relative rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200">
-        <div className="flex items-center justify-end gap-1 px-2 py-1.5 bg-neutral-100/90 border-b border-neutral-200 text-xs text-neutral-700">
-          <button
-            type="button"
-            className="p-1 rounded hover:bg-neutral-200 disabled:opacity-35 disabled:pointer-events-none"
-            aria-label="Zoom out"
-            disabled={scale <= 1}
-            onClick={() => bumpScale(-0.25)}
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-          <span className="tabular-nums w-10 text-center">
-            {Math.round(scale * 100)}%
-          </span>
-          <button
-            type="button"
-            className="p-1 rounded hover:bg-neutral-200"
-            aria-label="Zoom in"
-            onClick={() => bumpScale(0.25)}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            className="ml-1 px-2 py-0.5 rounded hover:bg-neutral-200 text-neutral-600"
-            onClick={() => {
-              scrollAnchorRef.current = null;
-              setScale(1);
-              requestAnimationFrame(() => {
-                containerRef.current?.scrollTo(0, 0);
-              });
-            }}
-          >
-            Reset
-          </button>
-        </div>
-        <div
-          ref={containerRef}
-          className="aspect-[4/3] overflow-auto bg-neutral-50"
-          tabIndex={0}
-        >
-          {!failed ? (
-            <div
-              className="relative block"
-              style={{
-                width: `${100 * scale}%`,
-                height: `${100 * scale}%`,
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={src}
-                alt={alt}
-                className="absolute left-0 top-0 h-full w-full object-contain object-center select-none"
-                draggable={false}
-                onError={() => setFailed(true)}
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-1 text-neutral-400 text-xs p-6 text-center h-full min-h-[12rem]">
-              <span>Couldn’t load image</span>
-              <span className="text-[10px]">URL may have expired — refresh the page</span>
-            </div>
-          )}
-        </div>
-        <p className="text-[10px] text-neutral-400 px-2 py-1 border-t border-neutral-100 bg-white">
-          Scroll to pan when zoomed.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
@@ -415,10 +460,70 @@ export default function DoctorDashboard() {
                   Phone: {patientDetails?.phone ?? "N/A"} ||
                   Gender: {patientDetails?.gender ?? "N/A"}
                 </p>
-                <p>
-                  Diagnosis Access:{" "}
-                  {patientDetails?.hasAccessToDiagnosis ? "Yes" : "No"}
-                </p>
+                <div className="mt-4 max-w-2xl space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-neutral-900">
+                        Diagnosis access (patient portal)
+                      </p>
+                      <p className="text-xs text-neutral-500 mt-0.5">
+                        When on, this patient can see diagnosis-related details in
+                        their own dashboard. Changes save to the server.
+                      </p>
+                      {diagnosisAccessSaving && (
+                        <p className="text-xs text-teal-600 mt-1">Saving…</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span
+                        className={`text-sm font-medium tabular-nums ${
+                          patientDetails?.hasAccessToDiagnosis
+                            ? "text-teal-700"
+                            : "text-neutral-500"
+                        }`}
+                      >
+                        {patientDetails == null
+                          ? "…"
+                          : patientDetails.hasAccessToDiagnosis
+                            ? "On"
+                            : "Off"}
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-busy={diagnosisAccessSaving}
+                        aria-checked={Boolean(
+                          patientDetails?.hasAccessToDiagnosis
+                        )}
+                        aria-label="Toggle diagnosis access for patient portal"
+                        disabled={
+                          patientDetails == null ||
+                          imagesLoading ||
+                          diagnosisAccessSaving
+                        }
+                        onClick={() => void handleDiagnosisAccessToggle()}
+                        className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          patientDetails?.hasAccessToDiagnosis
+                            ? "bg-teal-600"
+                            : "bg-neutral-300"
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            patientDetails?.hasAccessToDiagnosis
+                              ? "translate-x-6"
+                              : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                  {diagnosisAccessError && (
+                    <p className="text-sm text-red-600 px-1" role="alert">
+                      {diagnosisAccessError}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Comparison cards */}
@@ -427,146 +532,154 @@ export default function DoctorDashboard() {
                 specific lesion; metrics below apply to the zoomed region.
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {/* Left card */}
                 <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
-                  <div className="p-4 border-b border-neutral-100 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-semibold text-neutral-900">
-                        {images[leftIdx]?.fileName ?? "No image"}
-                      </h3>
-                      <p className="text-sm text-neutral-500">
-                        {images[leftIdx]?.dateTaken
-                          ? new Date(images[leftIdx].dateTaken).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
+                  <div className="p-4 border-b border-neutral-100">
+                    <h3 className="font-semibold text-neutral-900">
+                      {images[leftIdx]?.fileName ?? "No image"}
+                    </h3>
+                    <p className="text-sm text-neutral-500">
+                      {images[leftIdx]?.dateTaken
+                        ? new Date(images[leftIdx].dateTaken).toLocaleDateString()
+                        : "N/A"}
+                    </p>
                   </div>
-                  {images[leftIdx]?.signedUrl ? (
-                    <InPlaceZoomViewport
-                      imageKey={`left-${leftIdx}`}
-                      src={images[leftIdx].signedUrl}
-                      alt={images[leftIdx].fileName}
-                    />
-                  ) : (
-                    <div className="aspect-[4/3] bg-neutral-100 flex items-center justify-center">
-                      <span className="text-neutral-400 text-sm">No image</span>
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <p className="text-neutral-500">Site: {leftMetrics?.anatomicalSite ?? "-"}</p>
-                    <p className="text-neutral-500">Diagnosis: {leftMetrics?.diagnosis ?? "-"}</p>
-                    <p className="text-neutral-500">Number: {leftMetrics?.numberOfLesions ?? "-"}</p>
-                    <p className="text-neutral-500">Date: {leftMetrics
+                  <div className="p-4">
+                    {images[leftIdx]?.signedUrl ? (
+                      <InPlaceZoomViewport
+                        imageKey={`doc-left-${selectedPatient.id}-${leftIdx}-${images[leftIdx].fileName}`}
+                        src={images[leftIdx].signedUrl}
+                        alt={images[leftIdx].fileName}
+                        compareSync={leftCompareSync}
+                      />
+                    ) : (
+                      <div className="aspect-[4/3] bg-neutral-100 rounded-xl flex items-center justify-center">
+                        <span className="text-neutral-400 text-sm">No image</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center px-4 pt-0 pb-3 text-sm border-b border-neutral-100">
+                    <p className="text-neutral-500">
+                      Site: {leftMetrics?.anatomicalSite ?? "-"}
+                    </p>
+                    <p className="text-neutral-500">
+                      Diagnosis: {leftMetrics?.diagnosis ?? "-"}
+                    </p>
+                    <p className="text-neutral-500">
+                      Number: {leftMetrics?.numberOfLesions ?? "-"}
+                    </p>
+                    <p className="text-neutral-500">
+                      Date:{" "}
+                      {leftMetrics
                         ? new Date(leftMetrics.dateRecorded).toLocaleDateString()
-                        : "-"}</p>
+                        : "-"}
+                    </p>
                   </div>
-                </div>
-
-                {/* Right card */}
-                <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
-                  <div className="p-4 border-b border-neutral-100 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-semibold text-neutral-900">
-                        {images[rightIdx]?.fileName ?? "No image"}
-                      </h3>
-                      <p className="text-sm text-neutral-500">
-                        {images[rightIdx]?.dateTaken
-                          ? new Date(images[rightIdx].dateTaken).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                  {images[rightIdx]?.signedUrl ? (
-                    <InPlaceZoomViewport
-                      imageKey={`right-${rightIdx}`}
-                      src={images[rightIdx].signedUrl}
-                      alt={images[rightIdx].fileName}
-                    />
-                  ) : (
-                    <div className="aspect-[4/3] bg-neutral-100 flex items-center justify-center">
-                      <span className="text-neutral-400 text-sm">No image</span>
+                  {images.length > 0 && (
+                    <div className="px-4 pb-4 pt-3">
+                      <div className="rounded-xl border border-neutral-200 bg-neutral-50/90 px-3 py-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2 text-xs font-medium text-neutral-800">
+                          <span>Left — visit</span>
+                          <span className="tabular-nums text-neutral-600 shrink-0">
+                            {leftIdx + 1} / {images.length}
+                          </span>
+                        </div>
+                        <label htmlFor="doctor-compare-left-visit" className="sr-only">
+                          Choose visit for left panel
+                        </label>
+                        <input
+                          id="doctor-compare-left-visit"
+                          type="range"
+                          min={0}
+                          max={Math.max(0, images.length - 1)}
+                          step={1}
+                          value={leftIdx}
+                          onChange={(e) =>
+                            setLeftIdx(Number.parseInt(e.target.value, 10))
+                          }
+                          className={VISIT_RANGE_CLASS_NAME}
+                        />
+                        <div className="flex justify-between text-[10px] text-neutral-500">
+                          <span>Earlier</span>
+                          <span>Later</span>
+                        </div>
+                      </div>
                     </div>
                   )}
-                  <div className= "text-center">
-                    <p className="text-neutral-500">Site: {rightMetrics?.anatomicalSite ?? "-"}</p>
-                    <p className="text-neutral-500">Diagnosis: {rightMetrics?.diagnosis ?? "-"}</p>
-                    <p className="text-neutral-500">Number: {rightMetrics?.numberOfLesions ?? "-"}</p>
-                    <p className="text-neutral-500">Date: {rightMetrics
-                        ? new Date(rightMetrics.dateRecorded).toLocaleDateString()
-                        : "-"}</p>
-                  </div>
                 </div>
-              </div>
 
-              {/* Select left / right visit to compare */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <p className="text-sm font-medium text-neutral-600 mb-3">
-                    Select left visit
-                  </p>
-                  <div className="flex gap-3">
-                    {images.map((img, i) => (
-                      <button
-                        key={img.fileName + i}
-                        type="button"
-                        onClick={() => setLeftIdx(i)}
-                        className={`flex-1 rounded-xl border-2 ${
-                          leftIdx === i
-                            ? "border-teal-500 bg-teal-50"
-                            : "border-neutral-200 bg-white"
-                        }`}
-                      >
-                        <div className="aspect-square bg-neutral-100">
-                          <img
-                            src={img.signedUrl}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="text-xs p-2 text-center">
-                          <p>{img.fileName}</p>
-                          <p className="text-neutral-400">
-                            {img.dateTaken
-                              ? new Date(img.dateTaken).toLocaleDateString()
-                              : "N/A"}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+                  <div className="p-4 border-b border-neutral-100">
+                    <h3 className="font-semibold text-neutral-900">
+                      {images[rightIdx]?.fileName ?? "No image"}
+                    </h3>
+                    <p className="text-sm text-neutral-500">
+                      {images[rightIdx]?.dateTaken
+                        ? new Date(images[rightIdx].dateTaken).toLocaleDateString()
+                        : "N/A"}
+                    </p>
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-neutral-600 mb-3">
-                    Select right visit
-                  </p>
-                  <div className="flex gap-3">
-                    {images.map((img, i) => (
-                      <button
-                        key={img.fileName + i}
-                        type="button"
-                        onClick={() => setRightIdx(i)}
-                        className={`flex-1 rounded-xl border-2 ${
-                          rightIdx === i
-                            ? "border-teal-500 bg-teal-50"
-                            : "border-neutral-200 bg-white"
-                        }`}
-                      >
-                        <div className="aspect-square bg-neutral-100">
-                          <img
-                            src={img.signedUrl}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="text-xs p-2 text-center">
-                          <p>{img.fileName}</p>
-                          <p className="text-neutral-400">
-                            {img.dateTaken
-                              ? new Date(img.dateTaken).toLocaleDateString()
-                              : "N/A"}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                  <div className="p-4">
+                    {images[rightIdx]?.signedUrl ? (
+                      <InPlaceZoomViewport
+                        imageKey={`doc-right-${selectedPatient.id}-${rightIdx}-${images[rightIdx].fileName}`}
+                        src={images[rightIdx].signedUrl}
+                        alt={images[rightIdx].fileName}
+                        compareSync={rightCompareSync}
+                      />
+                    ) : (
+                      <div className="aspect-[4/3] bg-neutral-100 rounded-xl flex items-center justify-center">
+                        <span className="text-neutral-400 text-sm">No image</span>
+                      </div>
+                    )}
                   </div>
+                  <div className="text-center px-4 pt-0 pb-3 text-sm border-b border-neutral-100">
+                    <p className="text-neutral-500">
+                      Site: {rightMetrics?.anatomicalSite ?? "-"}
+                    </p>
+                    <p className="text-neutral-500">
+                      Diagnosis: {rightMetrics?.diagnosis ?? "-"}
+                    </p>
+                    <p className="text-neutral-500">
+                      Number: {rightMetrics?.numberOfLesions ?? "-"}
+                    </p>
+                    <p className="text-neutral-500">
+                      Date:{" "}
+                      {rightMetrics
+                        ? new Date(rightMetrics.dateRecorded).toLocaleDateString()
+                        : "-"}
+                    </p>
+                  </div>
+                  {images.length > 0 && (
+                    <div className="px-4 pb-4 pt-3">
+                      <div className="rounded-xl border border-neutral-200 bg-neutral-50/90 px-3 py-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2 text-xs font-medium text-neutral-800">
+                          <span>Right — visit</span>
+                          <span className="tabular-nums text-neutral-600 shrink-0">
+                            {rightIdx + 1} / {images.length}
+                          </span>
+                        </div>
+                        <label htmlFor="doctor-compare-right-visit" className="sr-only">
+                          Choose visit for right panel
+                        </label>
+                        <input
+                          id="doctor-compare-right-visit"
+                          type="range"
+                          min={0}
+                          max={Math.max(0, images.length - 1)}
+                          step={1}
+                          value={rightIdx}
+                          onChange={(e) =>
+                            setRightIdx(Number.parseInt(e.target.value, 10))
+                          }
+                          className={VISIT_RANGE_CLASS_NAME}
+                        />
+                        <div className="flex justify-between text-[10px] text-neutral-500">
+                          <span>Earlier</span>
+                          <span>Later</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
