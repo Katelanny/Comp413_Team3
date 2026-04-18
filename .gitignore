@@ -25,5 +25,17 @@ next-env.d.ts
 *.user
 *.suo
 *.log
+<<<<<<< HEAD
+appsettings.development.json
+
+# ml
+*.pth
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.cache/
+=======
 
 /scripts
+>>>>>>> main
