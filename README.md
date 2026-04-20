@@ -4,8 +4,6 @@
 
 - [Introduction](#introduction)
 - [Repo Structure](#repo-structure)
-- [Installation](#installation)
-- [Data](#data)
 - [Frontend](#frontend)
 - [Backend](#backend)
 - [Modeling](#modeling)
@@ -50,11 +48,6 @@ Unless specified otherwise, the user should complete all steps outlined in this 
 - `project_description&functionDefinition.md`
 - `test_cases.md`
 
-## Installation
-
-### Prerequisites
-- 
-
 ### Environment Setup
 
 **Clone the repository:**
@@ -63,10 +56,6 @@ Unless specified otherwise, the user should complete all steps outlined in this 
    git clone --recurse-submodules https://github.com/Katelanny/Comp413_Team3.git
    cd COMP413_TEAM3
    ```
-
-## Data
-
-**Example:**
 
 ## Frontend
 
@@ -80,6 +69,6 @@ This project has a backend component. To learn more about the frontend and how t
 
 ## Modeling
 
-This project conducts lession detection, pose detection, and time change on lession. To learn more about the model and how to run it, click on the link below to navigate to their respective README files nested within the mlg subdirectory. 
+This project conducts lession detection, pose detection, and time change on lession. To learn more about the model and how to run it, click on the link below to navigate to their respective README files nested within the ml subdirectory. 
 
 - [ML README](ml/README.md)
