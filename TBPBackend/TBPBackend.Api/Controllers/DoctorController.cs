@@ -123,6 +123,35 @@ public class DoctorController : ControllerBase
         });
     }
 
+    [HttpGet("patients/{patientId:long}/images")]
+    [Authorize(Policy = "DoctorOnly")]
+    public async Task<ActionResult<List<PatientImageDto>>> GetPatientImages(long patientId)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.AppUserId == userId);
+        if (doctor is null) return NotFound();
+
+        var hasVisit = await _db.Visits.AnyAsync(v => v.DoctorId == doctor.Id && v.PatientId == patientId);
+        if (!hasVisit) return Forbid();
+
+        var patient = await _db.Patients.FirstOrDefaultAsync(p => p.Id == patientId);
+        if (patient is null) return NotFound();
+
+        if (patient.AppUserId is null) return Ok(new List<PatientImageDto>());
+
+        var images = await _imageService.GetAllImageUrlsAsync(patient.AppUserId);
+
+        return Ok(images.Select(i => new PatientImageDto
+        {
+            ImageId = i.Id,
+            Url = i.SignedUrl,
+            CameraAngle = i.CameraAngle,
+            CreatedAtUtc = i.DateTaken ?? DateTime.MinValue,
+        }).ToList());
+    }
+
     [HttpGet]
     [Authorize(Policy = "MedicalStaff")]
     public async Task<ActionResult<IEnumerable<DoctorInfoDto>>> GetAllDoctors()
