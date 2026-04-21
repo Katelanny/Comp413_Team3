@@ -9,63 +9,6 @@ import {
   type CompareSyncControl,
 } from "@/components/dashboard/InPlaceZoomViewport";
 import { Search, User } from "lucide-react";
-const dummyLesionData = {
-  predictions: [
-    {
-      img_id: "24",
-      lesions: [
-        {
-          lesion_id: "string_0",
-          score: 0.9981,
-          anatomical_site: "Left Arm",
-          prev_lesion_id: null,
-          relative_size_change: "+5%",
-          polygon_mask: [[496,623,495,624,494,624,489,629,489,630,488,631,488,635,489,636,489,637,490,638,491,638,493,640,504,640,505,639,505,638,506,637,506,628,505,627,505,626,503,624,502,624,501,623]]
-        },
-        {
-          lesion_id: "string_1",
-          score: 0.9970,
-          anatomical_site: "Back",
-          prev_lesion_id: "string_0",
-          relative_size_change: "-2%",
-          polygon_mask: [[586,796,585,797,584,797,583,798,583,799,582,800,582,801,581,802,581,811,582,812,582,813,584,815,594,815,595,814,595,813,596,812,596,802,595,801,595,799,592,796]]
-        },
-        {
-          lesion_id: "string_2",
-          score: 0.9964,
-          anatomical_site: "Right Shoulder",
-          prev_lesion_id: "string_1",
-          relative_size_change: "+1%",
-          polygon_mask: [[482,904,481,905,480,905,475,910,475,911,474,912,474,913,473,914,473,923,474,924,474,925,488,925,491,922,491,908,490,907,490,905,489,904]]
-        },
-        {
-          lesion_id: "string_3",
-          score: 0.9955,
-          anatomical_site: "Lower Back",
-          prev_lesion_id: null,
-          relative_size_change: "0%",
-          polygon_mask: [[382,1313,380,1315,380,1323,381,1324,381,1325,390,1325,391,1324,391,1317,388,1314,387,1314,386,1313]]
-        },
-        {
-          lesion_id: "string_4",
-          score: 0.9952,
-          anatomical_site: "Left Leg",
-          prev_lesion_id: "string_2",
-          relative_size_change: "+3%",
-          polygon_mask: [[321,527,320,528,319,528,317,530,317,531,316,532,316,542,317,543,317,545,318,546,318,547,322,551,330,551,331,550,331,536,329,534,329,533,325,529,324,529,323,528,322,528]]
-        },
-        {
-          lesion_id: "string_5",
-          score: 0.9924,
-          anatomical_site: "Neck",
-          prev_lesion_id: null,
-          relative_size_change: "-1%",
-          polygon_mask: [[818,544,816,546,816,552,817,553,825,553,826,552,826,551,827,550,826,549,826,547,824,545,823,545,822,544]]
-        }
-      ]
-    }
-  ]
-};
 
 export default function DoctorDashboard() {
   const [patients, setPatients] = useState<any[]>([]);
@@ -77,8 +20,10 @@ export default function DoctorDashboard() {
   const [leftIdx, setLeftIdx] = useState(0);
   const [rightIdx, setRightIdx] = useState(1);
   const [imagesLoading, setImagesLoading] = useState(false);
+  const [leftLesions, setLeftLesions] = useState<any[]>([]);
+  const [rightLesions, setRightLesions] = useState<any[]>([]);
   const [lesions, setLesions] = useState<any[]>([]);
-  const [patientDetails, setPatientDetails] = useState<any>(null);
+  const [lesionsLoading, setLesionsLoading] = useState(false);  const [patientDetails, setPatientDetails] = useState<any>(null);
   const [diagnosisAccessSaving, setDiagnosisAccessSaving] = useState(false);
   const [diagnosisAccessError, setDiagnosisAccessError] = useState<string | null>(
     null
@@ -94,20 +39,9 @@ export default function DoctorDashboard() {
   } | null>(null);
   const [compareScale, setCompareScale] = useState(1);
   const [compareScroll, setCompareScroll] = useState({ l: 0, t: 0 });
-  const [selectedLesion, setSelectedLesion] = useState<any>(null);
-  const [lesionPopup, setLesionPopup] = useState<{ x: number; y: number } | null>(null);
-
-  function findLesionForImage(img: any, lesions: any[]) {
-    if (!img) return undefined;
-    return lesions.find(
-      (l) =>
-        new Date(l.dateRecorded).toDateString() ===
-        new Date(img.dateTaken).toDateString()
-    );
-  }
-  const leftMetrics = findLesionForImage(images[leftIdx], lesions);
-  const rightMetrics = findLesionForImage(images[rightIdx], lesions);
-
+  const [lesionPopups, setLesionPopups] = useState<
+    { id: string; side: "left" | "right"; lesion: any; x: number; y: number }[]
+  >([]);
   const handleCompareScroll = useCallback((l: number, t: number) => {
     setCompareScroll({ l, t });
   }, []);
@@ -283,6 +217,7 @@ export default function DoctorDashboard() {
       setSelectedPatient(patients[0]);
     }
   }, [patients]);
+  
 
   useEffect(() => {
     const fetchPatientDetails = async () => {
@@ -290,19 +225,16 @@ export default function DoctorDashboard() {
       setImagesLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const [detailsRes, patientRes] = await Promise.all([
-          fetch(
-            `http://localhost:5023/api/doctor/patients/${selectedPatient.id}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ),
-          fetch(
-            `http://localhost:5023/api/patient/${selectedPatient.id}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ),
+        const [detailsRes, patientRes, imagesRes] = await Promise.all([
+          fetch(`http://localhost:5023/api/doctor/patients/${selectedPatient.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`http://localhost:5023/api/patient/${selectedPatient.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`http://localhost:5023/api/doctor/patients/${selectedPatient.id}/images`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
         if (!detailsRes.ok) throw new Error("Failed to fetch patient data");
@@ -310,12 +242,13 @@ export default function DoctorDashboard() {
         const data = await detailsRes.json();
         const patientProfile = await patientRes.json();
         setPatientDetails(patientProfile); 
-
-        const imgs = (data.images || [])
+        const imagesData = await imagesRes.json();
+        const imgs = (imagesData || [])
           .map((img: any) => ({
-            fileName: img.fileName,
+            id: img.imageId,
+            fileName: img.url.split("/").pop()?.split("?")[0] ?? "image",
             signedUrl: img.url,
-            dateTaken: img.dateTaken,
+            dateTaken: img.createdAtUtc,
           }))
           .sort(
             (a: any, b: any) =>
@@ -351,6 +284,19 @@ export default function DoctorDashboard() {
     setDiagnosisAccessError(null);
   }, [selectedPatient?.id]);
   
+  useEffect(() => {
+    const image = images[leftIdx];
+    if (!image?.id) return;
+
+    fetchLesionsForImage(image.id, "left");
+  }, [leftIdx, images]);
+
+  useEffect(() => {
+    const image = images[rightIdx];
+    if (!image?.id) return;
+
+    fetchLesionsForImage(image.id, "right");
+  }, [rightIdx, images]);
 
   useEffect(() => {
     const max = Math.max(0, images.length - 1);
@@ -434,6 +380,57 @@ export default function DoctorDashboard() {
       window.location.href = "/";
     }
   };
+
+  const fetchLesionsForImage = async (
+    imageId: string | number,
+    side: "left" | "right"
+  ) => {
+    try {
+      setLesionsLoading(true);
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `http://localhost:5023/api/prediction/${imageId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            accept: "text/plain",
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch lesions");
+
+      const data = await res.json();
+      const lesions = data.predictions?.[0]?.lesions || [];
+
+      if (side === "left") {
+        setLeftLesions(lesions);
+      } else {
+        setRightLesions(lesions);
+      }
+    } catch (err) {
+      console.error(`Lesion fetch error (${side}):`, err);
+
+      if (side === "left") setLeftLesions([]);
+      else setRightLesions([]);
+    } finally {
+      setLesionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setLesionPopups((prev) =>
+      prev.filter((p) => p.side !== "left")
+    );
+  }, [leftIdx]);
+
+  useEffect(() => {
+    setLesionPopups((prev) =>
+      prev.filter((p) => p.side !== "right")
+    );
+  }, [rightIdx]);
   
 
   return (
@@ -606,40 +603,31 @@ export default function DoctorDashboard() {
                   </div>
                   <div className="p-4">
                     {images[leftIdx]?.signedUrl ? (
-                      <InPlaceZoomViewport
-                        imageKey={`doc-left-${selectedPatient.id}-${leftIdx}-${images[leftIdx].fileName}`}
-                        src={images[leftIdx].signedUrl}
-                        alt={images[leftIdx].fileName}
-                        compareSync={leftCompareSync}
-                        lesions={dummyLesionData.predictions[0].lesions}
-                        onSelectLesion={(lesion, x, y) => {
-                          setSelectedLesion(lesion);
-                          setLesionPopup({ x, y });
-                        }}
-                        
-                      />
+                      <>
+                        {lesionsLoading && (
+                          <p className="text-xs text-neutral-400">Loading lesions...</p>
+                        )}
+                        <InPlaceZoomViewport
+                          imageKey={`doc-left-${selectedPatient.id}-${leftIdx}-${images[leftIdx].fileName}`}
+                          src={images[leftIdx].signedUrl}
+                          alt={images[leftIdx].fileName}
+                          compareSync={leftCompareSync}
+                          lesions={leftLesions}
+                          onSelectLesion={(lesion, x, y) => {
+                            const id = `${Date.now()}-${Math.random()}`;
+
+                            setLesionPopups((prev) => [
+                              ...prev,
+                              { id, side: "left", lesion, x, y },
+                            ]);
+                          }}
+                        />
+                      </>
                     ) : (
                       <div className="aspect-[4/3] bg-neutral-100 rounded-xl flex items-center justify-center">
                         <span className="text-neutral-400 text-sm">No image</span>
                       </div>
                     )}
-                  </div>
-                  <div className="text-center px-4 pt-0 pb-3 text-sm border-b border-neutral-100">
-                    <p className="text-neutral-500">
-                      Site: {leftMetrics?.anatomicalSite ?? "-"}
-                    </p>
-                    <p className="text-neutral-500">
-                      Diagnosis: {leftMetrics?.diagnosis ?? "-"}
-                    </p>
-                    <p className="text-neutral-500">
-                      Number: {leftMetrics?.numberOfLesions ?? "-"}
-                    </p>
-                    <p className="text-neutral-500">
-                      Date:{" "}
-                      {leftMetrics
-                        ? new Date(leftMetrics.dateRecorded).toLocaleDateString()
-                        : "-"}
-                    </p>
                   </div>
                   {images.length > 0 && (
                     <div className="px-4 pb-4 pt-3">
@@ -686,40 +674,32 @@ export default function DoctorDashboard() {
                     </p>
                   </div>
                   <div className="p-4">
-                    {images[rightIdx]?.signedUrl ? (
-                      <InPlaceZoomViewport
-                        imageKey={`doc-right-${selectedPatient.id}-${rightIdx}-${images[rightIdx].fileName}`}
-                        src={images[rightIdx].signedUrl}
-                        alt={images[rightIdx].fileName}
-                        compareSync={rightCompareSync}
-                        lesions={dummyLesionData.predictions[0].lesions}
-                        onSelectLesion={(lesion, x, y) => {
-                          setSelectedLesion(lesion);
-                          setLesionPopup({ x, y });
-                        }}
-                      />
+                    {images[leftIdx]?.signedUrl ? (
+                      <>
+                        {lesionsLoading && (
+                          <p className="text-xs text-neutral-400">Loading lesions...</p>
+                        )}
+                        <InPlaceZoomViewport
+                          imageKey={`doc-right-${selectedPatient.id}-${rightIdx}-${images[rightIdx].fileName}`}
+                          src={images[rightIdx].signedUrl}
+                          alt={images[leftIdx].fileName}
+                          compareSync={leftCompareSync}
+                          lesions={rightLesions}
+                          onSelectLesion={(lesion, x, y) => {
+                            const id = `${Date.now()}-${Math.random()}`;
+
+                            setLesionPopups((prev) => [
+                              ...prev,
+                              { id, side: "right", lesion, x, y },
+                            ]);
+                          }}
+                        />
+                      </>
                     ) : (
                       <div className="aspect-[4/3] bg-neutral-100 rounded-xl flex items-center justify-center">
                         <span className="text-neutral-400 text-sm">No image</span>
                       </div>
                     )}
-                  </div>
-                  <div className="text-center px-4 pt-0 pb-3 text-sm border-b border-neutral-100">
-                    <p className="text-neutral-500">
-                      Site: {rightMetrics?.anatomicalSite ?? "-"}
-                    </p>
-                    <p className="text-neutral-500">
-                      Diagnosis: {rightMetrics?.diagnosis ?? "-"}
-                    </p>
-                    <p className="text-neutral-500">
-                      Number: {rightMetrics?.numberOfLesions ?? "-"}
-                    </p>
-                    <p className="text-neutral-500">
-                      Date:{" "}
-                      {rightMetrics
-                        ? new Date(rightMetrics.dateRecorded).toLocaleDateString()
-                        : "-"}
-                    </p>
                   </div>
                   {images.length > 0 && (
                     <div className="px-4 pb-4 pt-3">
@@ -778,31 +758,33 @@ export default function DoctorDashboard() {
               </div>
             </>
           )}
-          {selectedLesion && lesionPopup && (
+          {lesionPopups.map((popup) => (
             <div
+              key={popup.id}
               className="fixed z-50 bg-white border shadow-xl rounded-lg p-3 text-sm"
               style={{
-                top: lesionPopup.y + 10,
-                left: lesionPopup.x + 10,
+                top: popup.y + 10,
+                left: popup.x + 10,
               }}
             >
               <p className="font-semibold mb-1">Lesion</p>
-              <p>ID: {selectedLesion.lesion_id}</p>
-              <p>Score: {selectedLesion.score}</p>
-              <p>Location: {selectedLesion.anatomical_site}</p>
-              <p>Change: {selectedLesion.relative_size_change}</p>
+              <p>ID: {popup.lesion.lesion_id}</p>
+              <p>Score: {popup.lesion.score}</p>
+              <p>Location: {popup.lesion.anatomical_site}</p>
+              <p>Change: {popup.lesion.relative_size_change}</p>
 
               <button
                 className="mt-2 text-xs text-red-500"
                 onClick={() => {
-                  setSelectedLesion(null);
-                  setLesionPopup(null);
+                  setLesionPopups((prev) =>
+                    prev.filter((p) => p.id !== popup.id)
+                  );
                 }}
               >
                 Close
               </button>
             </div>
-          )}
+          ))}
         </main>
       </div>
     </div>
