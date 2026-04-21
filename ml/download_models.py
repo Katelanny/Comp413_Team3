@@ -8,6 +8,8 @@ def download_model_files():
     files = [
         ("models/lesion/config.yaml", "/tmp/lesion_config.yaml"),
         ("models/model.pth", "/tmp/lesion_weights.pth"),
+        ("models/lesion/pose/pose_config.yaml", "./tmp/pose_config.yaml"),
+        ("models/pose/model_final.pth", "/tmp/pose_weights.pth")
     ]
 
     for blob_path, local_path in files:
