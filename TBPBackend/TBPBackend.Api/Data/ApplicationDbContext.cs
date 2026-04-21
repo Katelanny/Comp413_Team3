@@ -21,6 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     public DbSet<Visits> Visits { get; set; } = null!;
     public DbSet<UserImage> UserImages { get; set; } = null!;
     public DbSet<Lesion> Lesions { get; set; } = null!;
+    public DbSet<ImagePrediction> ImagePredictions { get; set; } = null!;
+    public DbSet<LesionDetection> LesionDetections { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -115,6 +115,10 @@ builder.Services.AddScoped<IImageRepository, ImageRepository>();
 
 builder.Services.AddScoped<IImageService, ImageService>();
 
+builder.Services.AddScoped<IPredictionRepository, PredictionRepository>();
+
+builder.Services.AddScoped<IPredictionService, PredictionService>();
+
 
 var app = builder.Build();
 

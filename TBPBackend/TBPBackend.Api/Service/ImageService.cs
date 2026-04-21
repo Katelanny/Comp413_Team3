@@ -85,9 +85,25 @@ public class ImageService : IImageService
         return added.Count;
     }
 
+    private const string StorageServiceAccount =
+        "backend-storage-admin@project-37ee58e8-38e4-4451-85a.iam.gserviceaccount.com";
+
     private static async Task<UrlSigner> CreateUrlSignerAsync()
     {
         var credential = await GoogleCredential.GetApplicationDefaultAsync();
+
+        // UrlSigner requires a service account credential. When running locally with
+        // user ADC (gcloud auth application-default login), impersonate the storage
+        // service account so it can sign URLs on our behalf.
+        if (credential.UnderlyingCredential is not Google.Apis.Auth.OAuth2.ServiceAccountCredential)
+        {
+            credential = credential.Impersonate(
+                new Google.Apis.Auth.OAuth2.ImpersonatedCredential.Initializer(StorageServiceAccount)
+                {
+                    Scopes = ["https://www.googleapis.com/auth/devstorage.read_only"]
+                });
+        }
+
         return UrlSigner.FromCredential(credential);
     }
 }

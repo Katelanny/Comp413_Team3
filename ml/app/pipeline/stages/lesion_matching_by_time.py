@@ -27,11 +27,14 @@ def run_lesion_matching_by_time(
     Returns:
         List[LesionResult] with updated lesion fields (same objects, mutated)
     """
-    lesion_results.sort(key=lambda x: x.timestamp)
+    lesion_results = sorted(lesion_results, key=lambda x: x.timestamp)
 
     for i in range(1, len(lesion_results)):
         prev = lesion_results[i-1]
         curr = lesion_results[i]
+
+        if prev.camera_angle != curr.camera_angle:
+            continue
 
         matched_prev_lesions = set()
 
@@ -54,12 +57,15 @@ def run_lesion_matching_by_time(
                 
             if best_iou >= iou_threshold and best_match and best_match.lesion_id not in matched_prev_lesions:
                 lesion.prev_lesion_id = best_match.lesion_id
+                matched_prev_lesions.add(best_match.lesion_id)
 
                 area_prev = get_area(best_match.box)
                 area_curr = get_area(lesion.box)
 
                 if area_prev > 0:
                     lesion.relative_size_change = (area_curr - area_prev) / area_prev
+                else:
+                    lesion.relative_size_change = 0.0
 
 
 def get_area(box: BoundingBox) -> float:
@@ -73,8 +79,8 @@ def calculate_iou(boxA: BoundingBox, boxB: BoundingBox) -> float:
 
     interArea = max(0, xB - xA) * max(0, yB - yA)
 
-    boxAArea = (boxA.x2 - boxA.x1) * (boxA.y2 - boxA.y1)
-    boxBArea = (boxB.x2 - boxB.x1) * (boxB.y2 - boxB.y1)
+    boxAArea = get_area(boxA)
+    boxBArea = get_area(boxB)
 
     iou = interArea / float(boxAArea + boxBArea - interArea) if (boxAArea + boxBArea - interArea) > 0 else 0
 
