@@ -1,6 +1,10 @@
+import logging
+
 from app.pipeline.types import LesionAnalysis
 from app.services.image_loader import LoadedImage
 from app.models.lesion_model import LesionModel
+
+logger = logging.getLogger(__name__)
 
 
 def run_lesion_detection(
@@ -25,5 +29,6 @@ def run_lesion_detection(
         lesion_analysis = lesion_model.predict(images)
         return lesion_analysis
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Lesion detection failed: {e}")
         return []

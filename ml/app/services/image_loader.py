@@ -72,7 +72,7 @@ async def _load_single_image(
             return ImageError(
                 img_id = img_input.img_id,
                 timestamp=img_input.timestamp,
-                error=f"decode_failed: str{e}",
+                error=f"decode_failed: {e}",
             )
 
 
