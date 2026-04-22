@@ -9,6 +9,9 @@ interface LoginProps {
     onNavigateToRegister: () => void;
 }
 
+/*
+* controls the login logic
+*/
 const Login = ({ onNavigateToRegister }: LoginProps) => {
     const [userType, setUserType] = useState<'patient' | 'doctor' | 'admin'>('patient');
     const [username, setUsername] = useState('');
@@ -21,6 +24,7 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
         setLoading(true);
         setError('');
 
+        // tries to fetch login and verify if the correct user type was selected
         try {
             const res = await fetch('http://localhost:5023/api/account/login', {
                 method: 'POST',
