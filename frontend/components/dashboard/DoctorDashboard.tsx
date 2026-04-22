@@ -11,6 +11,7 @@ import {
 import { Search, User } from "lucide-react";
 
 export default function DoctorDashboard() {
+  // Consts used throughout the whole project
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,10 +26,7 @@ export default function DoctorDashboard() {
   const [lesions, setLesions] = useState<any[]>([]);
   const [lesionsLoading, setLesionsLoading] = useState(false);  const [patientDetails, setPatientDetails] = useState<any>(null);
   const [diagnosisAccessSaving, setDiagnosisAccessSaving] = useState(false);
-  const [diagnosisAccessError, setDiagnosisAccessError] = useState<string | null>(
-    null
-  );
-
+  const [diagnosisAccessError, setDiagnosisAccessError] = useState<string | null>(null);
   const leftCompareScrollRef = useRef<HTMLDivElement | null>(null);
   const rightCompareScrollRef = useRef<HTMLDivElement | null>(null);
   const compareZoomAnchorRef = useRef<{
@@ -42,10 +40,7 @@ export default function DoctorDashboard() {
   const [lesionPopups, setLesionPopups] = useState<
     { id: string; side: "left" | "right"; lesion: any; x: number; y: number }[]
   >([]);
-  const handleCompareScroll = useCallback((l: number, t: number) => {
-    setCompareScroll({ l, t });
-  }, []);
-
+  const handleCompareScroll = useCallback((l: number, t: number) => { setCompareScroll({ l, t });}, []);
   const handleCompareBumpScale = useCallback(
     (delta: number, el: HTMLDivElement) => {
       const sw = el.scrollWidth;
@@ -66,6 +61,9 @@ export default function DoctorDashboard() {
     []
   );
 
+  /**
+   * Function ensures that both tbp images are zoomed into at the same time uniformly
+   */
   const handleCompareWheelZoom = useCallback(
     (
       deltaScale: number,
@@ -93,6 +91,9 @@ export default function DoctorDashboard() {
     []
   );
 
+  /*
+  * Function helps reset the images that have beeen zoomed into 
+  */
   const handleCompareReset = useCallback(() => {
     compareZoomAnchorRef.current = null;
     setCompareScale(1);
@@ -103,6 +104,9 @@ export default function DoctorDashboard() {
     });
   }, []);
 
+  /*
+  * effect gets information on whether either image has been scrolled down or up, so both images are moved at the same time
+  */
   useLayoutEffect(() => {
     const a = compareZoomAnchorRef.current;
     compareZoomAnchorRef.current = null;
@@ -126,11 +130,17 @@ export default function DoctorDashboard() {
     if (src) setCompareScroll({ l: src.scrollLeft, t: src.scrollTop });
   }, [compareScale]);
 
+  /*
+  * effect sets the scale and scroll for the images
+  */
   useEffect(() => {
     setCompareScale(1);
     setCompareScroll({ l: 0, t: 0 });
   }, [leftIdx, rightIdx]);
 
+  /*
+  * checks that the left side image display is insync with the right side
+  */
   const leftCompareSync = useMemo(
     (): CompareSyncControl => ({
       scale: compareScale,
@@ -153,6 +163,9 @@ export default function DoctorDashboard() {
     ]
   );
 
+  /*
+  * checks that the right side image display is insync with the left side
+  */
   const rightCompareSync = useMemo(
     (): CompareSyncControl => ({
       scale: compareScale,
@@ -175,6 +188,9 @@ export default function DoctorDashboard() {
     ]
   );
 
+  /*
+  * fetches the doctor dashboard storing doctor and some patient information to be displayed
+  */
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
@@ -212,13 +228,18 @@ export default function DoctorDashboard() {
     fetchDashboard();
   }, []);
 
+  /*
+  * effect stores the selected pateint by the user
+  */
   useEffect(() => {
     if (patients.length > 0) {
       setSelectedPatient(patients[0]);
     }
   }, [patients]);
   
-
+  /*
+  * fetches more detail patient info like their images, predictions, and patient info
+  */
   useEffect(() => {
     const fetchPatientDetails = async () => {
       if (!selectedPatient) return;
@@ -280,10 +301,16 @@ export default function DoctorDashboard() {
     fetchPatientDetails();
   }, [selectedPatient]);
 
+  /*
+  * stores whether patient has access  to diagnosis or not
+  */
   useEffect(() => {
     setDiagnosisAccessError(null);
   }, [selectedPatient?.id]);
   
+  /*
+  * fetches lesions for the image selected if its the image on the left
+  */
   useEffect(() => {
     const image = images[leftIdx];
     if (!image?.id) return;
@@ -291,6 +318,9 @@ export default function DoctorDashboard() {
     fetchLesionsForImage(image.id, "left");
   }, [leftIdx, images]);
 
+  /*
+  * fetches lesion for the image slected if its the image on the right
+  */
   useEffect(() => {
     const image = images[rightIdx];
     if (!image?.id) return;
@@ -298,18 +328,27 @@ export default function DoctorDashboard() {
     fetchLesionsForImage(image.id, "right");
   }, [rightIdx, images]);
 
+  /*
+  * checks which image was selected by the user
+  */
   useEffect(() => {
     const max = Math.max(0, images.length - 1);
     setLeftIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
     setRightIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
   }, [images.length]);
 
+  /*
+  * filters patients by name for the search bar on the left side
+  */
   const filteredPatients = patients.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.mrn.toString().includes(searchQuery)
   );
 
+  /*
+  * fetch the api to change the diagnosis access for a patient
+  */
   const handleDiagnosisAccessToggle = async () => {
     if (!patientDetails || !selectedPatient || diagnosisAccessSaving) return;
     const next = !Boolean(patientDetails.hasAccessToDiagnosis);
@@ -363,6 +402,9 @@ export default function DoctorDashboard() {
     }
   };
 
+  /*
+  * logs out the user
+  */
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -381,6 +423,9 @@ export default function DoctorDashboard() {
     }
   };
 
+  /*
+  * fetches the lesion for the image displayed
+  */
   const fetchLesionsForImage = async (
     imageId: string | number,
     side: "left" | "right"
@@ -420,12 +465,18 @@ export default function DoctorDashboard() {
     }
   };
 
+  /*
+  * ensures the lesion popup is shown for the left hand side
+  */
   useEffect(() => {
     setLesionPopups((prev) =>
       prev.filter((p) => p.side !== "left")
     );
   }, [leftIdx]);
 
+  /*
+  * esnures the lesion popup is shown for the right hand side
+  */
   useEffect(() => {
     setLesionPopups((prev) =>
       prev.filter((p) => p.side !== "right")
@@ -435,7 +486,7 @@ export default function DoctorDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
-      {/* Header */}
+      {/* Header info display */}
       <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-neutral-200">
         <div className="flex items-center gap-4">
           <Logo />
@@ -518,6 +569,7 @@ export default function DoctorDashboard() {
                   Phone: {patientDetails?.phone ?? "N/A"} ||
                   Gender: {patientDetails?.gender ?? "N/A"}
                 </p>
+                {/* Patient access control */}
                 <div className="mt-4 max-w-2xl space-y-2">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3">
                     <div className="min-w-0">
@@ -584,7 +636,7 @@ export default function DoctorDashboard() {
                 </div>
               </div>
 
-              {/* Comparison cards */}
+              {/* Comparison image display*/}
               <p className="text-sm text-neutral-500 mb-4">
                 Compare body photos from two visits. Use zoom to focus on a
                 specific lesion; metrics below apply to the zoomed region.
@@ -683,7 +735,7 @@ export default function DoctorDashboard() {
                           imageKey={`doc-right-${selectedPatient.id}-${rightIdx}-${images[rightIdx].fileName}`}
                           src={images[rightIdx].signedUrl}
                           alt={images[leftIdx].fileName}
-                          compareSync={leftCompareSync}
+                          compareSync={rightCompareSync}
                           lesions={rightLesions}
                           onSelectLesion={(lesion, x, y) => {
                             const id = `${Date.now()}-${Math.random()}`;
@@ -758,6 +810,7 @@ export default function DoctorDashboard() {
               </div>
             </>
           )}
+          {/* lesion popup display*/}
           {lesionPopups.map((popup) => (
             <div
               key={popup.id}
