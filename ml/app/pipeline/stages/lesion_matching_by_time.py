@@ -40,7 +40,7 @@ def run_lesion_matching_by_time(
         for lesion in curr.lesions:
             best_iou = 0
             best_match = None
-            iou_threshold = 0.3
+            # iou_threshold = 0.3
 
             for prev_lesion in prev.lesions:
                 # if prev_lesion.anatomical_site != lesion.anatomical_site:
@@ -54,7 +54,7 @@ def run_lesion_matching_by_time(
                     best_iou = iou
                     best_match = prev_lesion
                 
-            if best_iou >= iou_threshold and best_match and best_match.lesion_id not in matched_prev_lesions:
+            if best_match:
                 lesion.prev_lesion_id = best_match.lesion_id
                 matched_prev_lesions.add(best_match.lesion_id)
 
@@ -88,50 +88,3 @@ def calculate_iou(boxA: BoundingBox, boxB: BoundingBox) -> float:
 
     return iou
 
-
-
-# # small test case
-# from app.pipeline.types import BoundingBox, Lesion, LesionAnalysis
-
-# t1 = datetime(2024, 1, 1)
-# t2 = datetime(2024, 2, 1)
-
-# lesion_t1 = Lesion(
-#     lesion_id="scan_jan_0",
-#     box=BoundingBox(x1=100, y1=100, x2=150, y2=150),
-#     score=0.95,
-#     polygon_mask=[],
-#     anatomical_site="upper_back"
-# )
-
-
-# lesion_t2_matched = Lesion(
-#     lesion_id="scan_feb_0",
-#     box=BoundingBox(x1=105, y1=105, x2=165, y2=165),
-#     score=0.92,
-#     polygon_mask=[],
-#     anatomical_site="upper_back"
-# )
-
-# lesion_t2_new = Lesion(
-#     lesion_id="scan_feb_1",
-#     box=BoundingBox(x1=500, y1=500, x2=520, y2=520),
-#     score=0.88,
-#     polygon_mask=[],
-#     anatomical_site="lower_back"
-# )
-
-# analysis_list = [
-#     LesionAnalysis(img_id="feb_scan", timestamp=t2, view="back", lesions=[lesion_t2_matched, lesion_t2_new]),
-#     LesionAnalysis(img_id="jan_scan", timestamp=t1, view="back", lesions=[lesion_t1]),
-# ]
-
-# run_lesion_matching_by_time(analysis_list)
-
-
-# for analysis in analysis_list:
-#     print(f"\nImage ID: {analysis.img_id} ({analysis.timestamp.date()})")
-#     for l in analysis.lesions:
-#         print(f"  - Lesion: {l.lesion_id}")
-#         print(f"    Match ID: {l.prev_lesion_id}")
-#         print(f"    Size Change: {f'{l.relative_size_change:.2%}' if l.relative_size_change else 'N/A'}")
