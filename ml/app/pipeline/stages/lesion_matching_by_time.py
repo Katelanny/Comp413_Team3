@@ -54,20 +54,20 @@ def run_lesion_matching_by_time(
                     best_iou = iou
                     best_match = prev_lesion
                 
-                if best_match:
-                    lesion.prev_lesion_id = best_match.lesion_id
-                    matched_prev_lesions.add(best_match.lesion_id)
+            if best_match:
+                lesion.prev_lesion_id = best_match.lesion_id
+                matched_prev_lesions.add(best_match.lesion_id)
 
-                    area_prev = get_area(best_match.box)
-                    area_curr = get_area(lesion.box)
+                area_prev = get_area(best_match.box)
+                area_curr = get_area(lesion.box)
 
-                    if area_prev > 0:
-                        lesion.relative_size_change = (area_curr - area_prev) / area_prev
-                    else:
-                        lesion.relative_size_change = 0.0
+                if area_prev > 0:
+                    lesion.relative_size_change = (area_curr - area_prev) / area_prev
                 else:
-                    lesion.prev_lesion_id = None
-                    lesion.relative_size_change = None
+                    lesion.relative_size_change = 0.0
+            else:
+                lesion.prev_lesion_id = None
+                lesion.relative_size_change = None
 
 
 def get_area(box: BoundingBox) -> float:
