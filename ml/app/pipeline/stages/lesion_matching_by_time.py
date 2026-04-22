@@ -27,14 +27,13 @@ def run_lesion_matching_by_time(
     Returns:
         List[LesionResult] with updated lesion fields (same objects, mutated)
     """
-    lesion_results = sorted(lesion_results, key=lambda x: x.timestamp)
-
+    lesion_results.sort(key=lambda x: x.timestamp)
     for i in range(1, len(lesion_results)):
         prev = lesion_results[i-1]
         curr = lesion_results[i]
 
-        if prev.camera_angle != curr.camera_angle:
-            continue
+        # if prev.camera_angle != curr.camera_angle:
+        #     continue
 
         matched_prev_lesions = set()
 
@@ -44,8 +43,8 @@ def run_lesion_matching_by_time(
             iou_threshold = 0.3
 
             for prev_lesion in prev.lesions:
-                if prev_lesion.anatomical_site != lesion.anatomical_site:
-                    continue
+                # if prev_lesion.anatomical_site != lesion.anatomical_site:
+                #     continue
                 if prev_lesion.lesion_id in matched_prev_lesions:
                     continue
 
@@ -66,6 +65,9 @@ def run_lesion_matching_by_time(
                     lesion.relative_size_change = (area_curr - area_prev) / area_prev
                 else:
                     lesion.relative_size_change = 0.0
+            else:
+                lesion.prev_lesion_id = None
+                lesion.relative_size_change = None
 
 
 def get_area(box: BoundingBox) -> float:
