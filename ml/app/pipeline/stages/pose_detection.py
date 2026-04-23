@@ -40,6 +40,8 @@ def run_pose_detection(
         return lesion_analysis
 
     try:
+        #Should return a list of dictionaries containing 
+        # I, U, and V matrices and patient_box [x1, y1, x2, y2]
         pose_results = pose_model.predict(images)
     except Exception as e:
         logger.error(f"Error occurred while running pose detection: {e}")
@@ -65,9 +67,11 @@ def run_pose_detection(
         for lesion in analysis.lesions:
             box = lesion.box
 
+            # Calculating center of lesion box from box coordinates
             mx = int((box.x1 + box.x2) / 2)
             my = int((box.y1 + box.y2) / 2)
 
+            # Checking if lesion center is within the person bounding box
             if (p_x1 <= mx <= p_x2) and (p_y1 <= my <= p_y2):
 
                 # Scale pixel offset to DensePose output dimensions.
@@ -81,6 +85,7 @@ def run_pose_detection(
 
                 part_id = int(dp_I[ly, lx])
 
+                # Updating lesion object if location is not background
                 if part_id > 0:
                     lesion.anatomical_site = BODY_PART_NAMES.get(part_id, "Unknown")
                     lesion.u_coord = float(dp_U[part_id, ly, lx])
