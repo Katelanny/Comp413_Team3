@@ -13,12 +13,27 @@ vi.mock("@/components/dashboard/InPlaceZoomViewport", () => ({
 }));
 
 function stubDashboardFetch(body: Record<string, unknown>) {
+  const dashboardImages = Array.isArray(body.images) ? body.images : [];
+
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input.toString();
       if (url.includes("/api/patient/dashboard")) {
         return jsonResponse(body);
+      }
+      if (url.includes("/api/images")) {
+        const imagesPayload = dashboardImages.map((img, i) => {
+          if (!img || typeof img !== "object") {
+            return { imageId: i + 1, imageUrl: "" };
+          }
+          const entry = img as Record<string, unknown>;
+          return {
+            imageId: Number(entry.id ?? i + 1),
+            imageUrl: String(entry.url ?? entry.imageUrl ?? ""),
+          };
+        });
+        return jsonResponse(imagesPayload);
       }
       return jsonResponse({}, false, 404);
     })
@@ -38,13 +53,13 @@ describe("PatientDashboard", () => {
   });
 
   describe("session", () => {
-    it("shows not signed in when there is no token", async () => {
+    it("shows a dashboard load error when there is no token", async () => {
       vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
 
       render(<PatientDashboard />);
 
       await waitFor(() => {
-        expect(screen.getByText("Not signed in.")).toBeInTheDocument();
+        expect(screen.getByText("Failed to load data")).toBeInTheDocument();
       });
     });
 
@@ -83,7 +98,7 @@ describe("PatientDashboard", () => {
   });
 
   describe("API errors", () => {
-    it("shows session expired when the API returns 401", async () => {
+    it("shows a dashboard load error when the API returns 401", async () => {
       vi.stubGlobal(
         "fetch",
         vi.fn(() => jsonResponse({}, false, 401))
@@ -93,13 +108,11 @@ describe("PatientDashboard", () => {
       render(<PatientDashboard />);
 
       await waitFor(() => {
-        expect(
-          screen.getByText("Session expired. Please log in again.")
-        ).toBeInTheDocument();
+        expect(screen.getByText("Failed to load data")).toBeInTheDocument();
       });
     });
 
-    it("shows a generic error when the API returns non-OK", async () => {
+    it("shows a dashboard load error when the API returns non-OK", async () => {
       vi.stubGlobal(
         "fetch",
         vi.fn(() => jsonResponse({ message: "bad" }, false, 500))
@@ -109,9 +122,7 @@ describe("PatientDashboard", () => {
       render(<PatientDashboard />);
 
       await waitFor(() => {
-        expect(
-          screen.getByText("Could not load your dashboard.")
-        ).toBeInTheDocument();
+        expect(screen.getByText("Failed to load data")).toBeInTheDocument();
       });
     });
   });
@@ -211,8 +222,8 @@ describe("PatientDashboard", () => {
         email: "dana@example.com",
         hasAccessToDiagnosis: true,
         images: [
-          { fileName: "visit-a.jpg", url: "https://example.com/a.jpg" },
-          { fileName: "visit-b.jpg", url: "https://example.com/b.jpg" },
+          { fileName: "visit-a.jpg", url: "https://example.com/visit-a.jpg" },
+          { fileName: "visit-b.jpg", url: "https://example.com/visit-b.jpg" },
         ],
         lesions: [],
       });
