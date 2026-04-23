@@ -4,6 +4,8 @@ using TBPBackend.Api.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 using TBPBackend.Api.Interfaces;
 using TBPBackend.Api.Models;
@@ -13,7 +15,6 @@ using TBPBackend.Api.Service;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
 
 // We want to initialize swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -45,16 +46,28 @@ builder.Services.AddSwaggerGen(options =>
 // setting the json serialization
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
-    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+    options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
 });
 
 // cors connection between frontend and backend
+var corsExtraOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:3000", "*")
+            .SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrWhiteSpace(origin)) return false;
+                if (origin.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase)) return true;
+                if (origin.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase)) return true;
+                if (origin.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)) return true;
+                return corsExtraOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+            })
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

@@ -36,18 +36,31 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
             if (!res.ok) {
                 throw new Error('Invalid login');
             }
-            const data = await res.json();
+            const data = (await res.json()) as Record<string, unknown>;
             console.log("Login response:", data);
 
-            const backendRole = data.role?.toLowerCase();
+            const token =
+                (typeof data.token === "string" && data.token) ||
+                (typeof data.Token === "string" && data.Token) ||
+                "";
+            const rawRole =
+                (typeof data.role === "string" && data.role) ||
+                (typeof data.Role === "string" && data.Role) ||
+                "";
+            const backendRole = rawRole.toLowerCase();
             const selectedRole = userType.toLowerCase();
 
-            if (backendRole !== selectedRole) {
-                setError(`You are registered as a ${backendRole}, not a ${selectedRole}.`);
+            if (!token) {
+                setError("Login failed: missing token in response.");
                 return;
             }
 
-            localStorage.setItem('token', data.token);
+            if (backendRole !== selectedRole) {
+                setError(`You are registered as a ${backendRole || "unknown"}, not a ${selectedRole}.`);
+                return;
+            }
+
+            localStorage.setItem('token', token);
             if (backendRole === 'doctor') {
                 window.location.href = '/doctor';
             } else if (backendRole === 'patient') {
