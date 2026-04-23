@@ -111,6 +111,7 @@ export default function PatientDashboard() {
   const [lesionPopups, setLesionPopups] = useState<
     { id: string; side: "left" | "right"; lesion: any; x: number; y: number }[]
   >([]);
+  const canViewDiagnosis = Boolean(patient?.hasAccessToDiagnosis);
 
   const handleCompareScroll = useCallback((l: number, t: number) => {
     setCompareScroll({ l, t });
@@ -353,14 +354,18 @@ export default function PatientDashboard() {
   };
 
   useEffect(() => {
+    if (!canViewDiagnosis) return;
+
     const img = images[leftIdx];
     if (img?.id) fetchLesionsForImage(img.id, "left");
-  }, [leftIdx, images]);
+  }, [leftIdx, images, canViewDiagnosis]);
 
   useEffect(() => {
+    if (!canViewDiagnosis) return;
+
     const img = images[rightIdx];
     if (img?.id) fetchLesionsForImage(img.id, "right");
-  }, [rightIdx, images]);
+  }, [rightIdx, images, canViewDiagnosis]);
 
   useEffect(() => {
     const loadAll = async () => {
@@ -533,15 +538,14 @@ export default function PatientDashboard() {
                       src={leftImg.signedUrl}
                       alt={leftImg.fileName}
                       compareSync={leftCompareSync}
-                      lesions={leftLesions}
-                      onSelectLesion={(lesion, x, y) => {
-                        const id = `${Date.now()}-${Math.random()}`;
-
-                        setLesionPopups((prev) => [
-                          ...prev,
-                          { id, side: "left", lesion, x, y },
-                        ]);
-                      }}
+                      lesions={canViewDiagnosis ? leftLesions : []}
+                        onSelectLesion={canViewDiagnosis ? (lesion, x, y) => {
+                          const id = `${Date.now()}-${Math.random()}`;
+                          setLesionPopups((prev) => [
+                            ...prev,
+                            { id, side: "left", lesion, x, y },
+                          ]);
+                        } : undefined}
                     />
                   ) : (
                     <div className="aspect-[4/3] bg-neutral-100 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-400 text-sm">
@@ -587,15 +591,14 @@ export default function PatientDashboard() {
                       src={rightImg.signedUrl}
                       alt={rightImg.fileName}
                       compareSync={rightCompareSync}
-                      lesions={rightLesions}
-                      onSelectLesion={(lesion, x, y) => {
-                        const id = `${Date.now()}-${Math.random()}`;
-
-                        setLesionPopups((prev) => [
-                          ...prev,
-                          { id, side: "right", lesion, x, y },
-                        ]);
-                      }}
+                      lesions={canViewDiagnosis ? rightLesions : []}
+                        onSelectLesion={canViewDiagnosis ? (lesion, x, y) => {
+                          const id = `${Date.now()}-${Math.random()}`;
+                          setLesionPopups((prev) => [
+                            ...prev,
+                            { id, side: "right", lesion, x, y },
+                          ]);
+                        } : undefined}
                     />
                   ) : (
                     <div className="aspect-[4/3] bg-neutral-100 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-400 text-sm">
@@ -763,33 +766,34 @@ export default function PatientDashboard() {
             </div>
           )}
         </section>
-        {lesionPopups.map((popup) => (
-          <div
-            key={popup.id}
-            className="fixed z-50 bg-white border shadow-xl rounded-lg p-3 text-sm"
-            style={{
-              top: popup.y + 10,
-              left: popup.x + 10,
-            }}
-          >
-            <p className="font-semibold mb-1">Lesion</p>
-            <p>ID: {popup.lesion.lesion_id}</p>
-            <p>Score: {popup.lesion.score}</p>
-            <p>Location: {popup.lesion.anatomical_site}</p>
-            <p>Change: {popup.lesion.relative_size_change}</p>
-
-            <button
-              className="mt-2 text-xs text-red-500"
-              onClick={() => {
-                setLesionPopups((prev) =>
-                  prev.filter((p) => p.id !== popup.id)
-                );
+        {canViewDiagnosis &&
+          lesionPopups.map((popup) => (
+            <div
+              key={popup.id}
+              className="fixed z-50 bg-white border shadow-xl rounded-lg p-3 text-sm"
+              style={{
+                top: popup.y + 10,
+                left: popup.x + 10,
               }}
             >
-              Close
-            </button>
-          </div>
-        ))}
+              <p className="font-semibold mb-1">Lesion</p>
+              <p>ID: {popup.lesion.lesion_id}</p>
+              <p>Score: {popup.lesion.score}</p>
+              <p>Location: {popup.lesion.anatomical_site}</p>
+              <p>Change: {popup.lesion.relative_size_change}</p>
+
+              <button
+                className="mt-2 text-xs text-red-500"
+                onClick={() => {
+                  setLesionPopups((prev) =>
+                    prev.filter((p) => p.id !== popup.id)
+                  );
+                }}
+              >
+                Close
+              </button>
+            </div>
+          ))}
       </main>
     </div>
   );
