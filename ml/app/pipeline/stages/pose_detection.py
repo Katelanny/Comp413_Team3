@@ -1,6 +1,10 @@
+import logging
+
 from app.pipeline.types import LesionAnalysis
 from app.services.image_loader import LoadedImage
 from app.models.pose_model import PoseModel
+
+logger = logging.getLogger(__name__)
 
 
 # Standard DensePose 24-part mapping
@@ -35,22 +39,16 @@ def run_pose_detection(
     if not images:
         return lesion_analysis
 
-
     try:
         #Should return a list of dictionaries containing 
         # I, U, and V matrices and patient_box [x1, y1, x2, y2]
-        pose_results = pose_model.predict(
-            images
-        )
+        pose_results = pose_model.predict(images)
     except Exception as e:
-        print(f"Error occurred while running pose detection: {e}")  
+        logger.error(f"Error occurred while running pose detection: {e}")
         return lesion_analysis
 
-
-    # TODO: combine info from pose_result to fill in the anatomical site in lesion_result
     for analysis, dp_result in zip(lesion_analysis, pose_results):
-        
-        # If no human detected, skip
+
         if not dp_result or dp_result.is_empty:
             continue
 
@@ -59,24 +57,35 @@ def run_pose_detection(
         dp_V = dp_result.V_matrix
         p_x1, p_y1, p_x2, p_y2 = dp_result.patient_box
 
-        #Iterating through every lesion found in lesion detection stage
+        # Store person box on analysis for use in temporal matching
+        analysis.person_box = (float(p_x1), float(p_y1), float(p_x2), float(p_y2))
+
+        dp_h, dp_w = dp_I.shape
+        box_w = p_x2 - p_x1
+        box_h = p_y2 - p_y1
+
         for lesion in analysis.lesions:
             box = lesion.box
 
-            #Calculating center of lesion
+            # Calculating center of lesion box from box coordinates
             mx = int((box.x1 + box.x2) / 2)
             my = int((box.y1 + box.y2) / 2)
 
-            # Ensuring lesion falls inside human bounding box
+            # Checking if lesion center is within the person bounding box
             if (p_x1 <= mx <= p_x2) and (p_y1 <= my <= p_y2):
 
-                # Mapping global image pixel to DensePose matrix coordinates
-                lx = min(max(int(mx-p_x1), 0), dp_I.shape[1]-1)
-                ly = min(max(int(my-p_y1), 0), dp_I.shape[0]-1)
+                # Scale pixel offset to DensePose output dimensions.
+                # DensePose outputs are at a fixed internal resolution (e.g. 112x112),
+                # not at the full bounding-box pixel size, so a direct pixel offset
+                # would clamp every lesion to the matrix edge (always "Left Foot").
+                lx = int((mx - p_x1) / box_w * dp_w)
+                ly = int((my - p_y1) / box_h * dp_h)
+                lx = min(max(lx, 0), dp_w - 1)
+                ly = min(max(ly, 0), dp_h - 1)
 
                 part_id = int(dp_I[ly, lx])
 
-                # If part is not in background, update lesion object
+                # Updating lesion object if location is not background
                 if part_id > 0:
                     lesion.anatomical_site = BODY_PART_NAMES.get(part_id, "Unknown")
                     lesion.u_coord = float(dp_U[part_id, ly, lx])
@@ -87,5 +96,3 @@ def run_pose_detection(
                 lesion.anatomical_site = "Outside Person Bounding Box"
 
     return lesion_analysis
-
-    
