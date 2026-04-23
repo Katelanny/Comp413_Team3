@@ -32,6 +32,7 @@ type LesionInfo = {
 };
 
 type ImageRow = {
+  id: number; 
   fileName: string;
   signedUrl: string;
 };
@@ -46,22 +47,6 @@ function formatDate(iso: string) {
   } catch {
     return iso;
   }
-}
-
-
-function normalizeImages(raw: unknown[]): ImageRow[] {
-  const out: ImageRow[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const x = item as Record<string, unknown>;
-    const fileName = String(x.fileName ?? x.FileName ?? "").trim();
-    const signedUrl = String(
-      x.signedUrl ?? x.SignedUrl ?? x.url ?? x.Url ?? ""
-    ).trim();
-    if (!signedUrl) continue;
-    out.push({ fileName: fileName || "Photo", signedUrl });
-  }
-  return out;
 }
 
 function SignedPhoto({
@@ -120,6 +105,12 @@ export default function PatientDashboard() {
   } | null>(null);
   const [compareScale, setCompareScale] = useState(1);
   const [compareScroll, setCompareScroll] = useState({ l: 0, t: 0 });
+  const [leftLesions, setLeftLesions] = useState<any[]>([]);
+  const [rightLesions, setRightLesions] = useState<any[]>([]);
+  const [lesionsLoading, setLesionsLoading] = useState(false);
+  const [lesionPopups, setLesionPopups] = useState<
+    { id: string; side: "left" | "right"; lesion: any; x: number; y: number }[]
+  >([]);
 
   const handleCompareScroll = useCallback((l: number, t: number) => {
     setCompareScroll({ l, t });
@@ -253,63 +244,24 @@ export default function PatientDashboard() {
       handleCompareReset,
     ]
   );
+  const loadDashboard = async () => {
+    const token = localStorage.getItem("token");
+    const res = await fetch("http://localhost:5023/api/patient/dashboard", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  useEffect(() => {
-    const loadData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Not signed in.");
-        setLoading(false);
-        return;
-      }
-
-      setError(null);
-      setLoading(true);
-
-      try {
-        const res = await fetch("http://localhost:5023/api/patient/dashboard", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (res.status === 401) throw new Error("Session expired. Please log in again.");
-        if (!res.ok) throw new Error("Could not load your dashboard.");
-
-        const data = await res.json() as Record<string, unknown>;
-
-        setPatient({
-          firstName: String(data.firstName ?? ""),
-          lastName: String(data.lastName ?? ""),
-          email: String(data.email ?? ""),
-          hasAccessToDiagnosis: Boolean(data.hasAccessToDiagnosis),
-        });
-
-        const rawImages = Array.isArray(data.images) ? data.images : [];
-        const list = normalizeImages(rawImages);
-        setImages(list);
-
-        const rawLesions = Array.isArray(data.lesions) ? data.lesions : [];
-        setLesions(rawLesions as LesionInfo[]);
-
-        setPhotoIdx(0);
-        if (list.length >= 2) {
-          setLeftIdx(0);
-          setRightIdx(1);
-        } else {
-          setLeftIdx(0);
-          setRightIdx(0);
-        }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+    if (!res.ok) throw new Error("Failed to load dashboard");
+    const data = await res.json();
+    setPatient({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      hasAccessToDiagnosis: data.hasAccessToDiagnosis,
+    });
+    setLesions(Array.isArray(data.lesions) ? data.lesions : []);
+  };
 
   useEffect(() => {
     const max = Math.max(0, images.length - 1);
@@ -343,6 +295,96 @@ export default function PatientDashboard() {
   const currentPhoto = images[photoIdx];
   const leftImg = images[leftIdx];
   const rightImg = images[rightIdx];
+
+  const fetchImages = async () => {
+    const token = localStorage.getItem("token");
+    const res = await fetch("http://localhost:5023/api/images", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error("Failed to load images");
+    const data = await res.json();
+    const normalized = data.map((x: any) => ({
+      id: x.imageId,
+      fileName: x.imageUrl.split("/").pop()?.split("?")[0] ?? "image",
+      signedUrl: x.imageUrl,
+    }));
+
+    setImages(normalized);
+    if (normalized.length >= 2) {
+      setLeftIdx(0);
+      setRightIdx(1);
+    } else {
+      setLeftIdx(0);
+      setRightIdx(0);
+    }
+  };
+
+  const fetchLesionsForImage = async (
+    imageId: number,
+    side: "left" | "right"
+  ) => {
+    try {
+      setLesionsLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:5023/api/prediction/${imageId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            accept: "text/plain",
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch lesions");
+      const data = await res.json();
+      const lesions = data.predictions?.[0]?.lesions || [];
+      if (side === "left") setLeftLesions(lesions);
+      else setRightLesions(lesions);
+    } catch (err) {
+      console.error(err);
+      if (side === "left") setLeftLesions([]);
+      else setRightLesions([]);
+    } finally {
+      setLesionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const img = images[leftIdx];
+    if (img?.id) fetchLesionsForImage(img.id, "left");
+  }, [leftIdx, images]);
+
+  useEffect(() => {
+    const img = images[rightIdx];
+    if (img?.id) fetchLesionsForImage(img.id, "right");
+  }, [rightIdx, images]);
+
+  useEffect(() => {
+    const loadAll = async () => {
+      try {
+        setLoading(true);
+        await loadDashboard();
+        await fetchImages(); 
+      } catch (e) {
+        setError("Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAll();
+  }, []);
+
+  useEffect(() => {
+    setLesionPopups((prev) => prev.filter((p) => p.side !== "left"));
+  }, [leftIdx]);
+
+  useEffect(() => {
+    setLesionPopups((prev) => prev.filter((p) => p.side !== "right"));
+  }, [rightIdx]);
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-100 text-neutral-900">
@@ -491,6 +533,15 @@ export default function PatientDashboard() {
                       src={leftImg.signedUrl}
                       alt={leftImg.fileName}
                       compareSync={leftCompareSync}
+                      lesions={leftLesions}
+                      onSelectLesion={(lesion, x, y) => {
+                        const id = `${Date.now()}-${Math.random()}`;
+
+                        setLesionPopups((prev) => [
+                          ...prev,
+                          { id, side: "left", lesion, x, y },
+                        ]);
+                      }}
                     />
                   ) : (
                     <div className="aspect-[4/3] bg-neutral-100 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-400 text-sm">
@@ -536,6 +587,15 @@ export default function PatientDashboard() {
                       src={rightImg.signedUrl}
                       alt={rightImg.fileName}
                       compareSync={rightCompareSync}
+                      lesions={rightLesions}
+                      onSelectLesion={(lesion, x, y) => {
+                        const id = `${Date.now()}-${Math.random()}`;
+
+                        setLesionPopups((prev) => [
+                          ...prev,
+                          { id, side: "right", lesion, x, y },
+                        ]);
+                      }}
                     />
                   ) : (
                     <div className="aspect-[4/3] bg-neutral-100 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-400 text-sm">
@@ -703,6 +763,33 @@ export default function PatientDashboard() {
             </div>
           )}
         </section>
+        {lesionPopups.map((popup) => (
+          <div
+            key={popup.id}
+            className="fixed z-50 bg-white border shadow-xl rounded-lg p-3 text-sm"
+            style={{
+              top: popup.y + 10,
+              left: popup.x + 10,
+            }}
+          >
+            <p className="font-semibold mb-1">Lesion</p>
+            <p>ID: {popup.lesion.lesion_id}</p>
+            <p>Score: {popup.lesion.score}</p>
+            <p>Location: {popup.lesion.anatomical_site}</p>
+            <p>Change: {popup.lesion.relative_size_change}</p>
+
+            <button
+              className="mt-2 text-xs text-red-500"
+              onClick={() => {
+                setLesionPopups((prev) =>
+                  prev.filter((p) => p.id !== popup.id)
+                );
+              }}
+            >
+              Close
+            </button>
+          </div>
+        ))}
       </main>
     </div>
   );
