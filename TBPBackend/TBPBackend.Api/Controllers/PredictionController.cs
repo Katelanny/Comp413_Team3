@@ -17,7 +17,7 @@ public class PredictionController : ControllerBase
     }
 
     [HttpGet("{imageId:long}")]
-    [Authorize(Policy = "DoctorOnly")]
+    [Authorize]
     public async Task<ActionResult<PredictionResponseDto>> GetPredictionByImageId(long imageId)
     {
         var result = await _predictionService.GetPredictionByImageIdAsync(imageId);
