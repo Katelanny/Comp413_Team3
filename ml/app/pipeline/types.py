@@ -75,6 +75,7 @@ class LesionAnalysis:
     timestamp: datetime
     camera_angle: str
     lesions: list[Lesion]
+    person_box: tuple[float, float, float, float] | None = None  # (x1, y1, x2, y2) in image pixel space
 
     def to_prediction(self) -> Prediction:
         return Prediction(
