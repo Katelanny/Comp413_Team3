@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import Link from "next/link";
+import { apiUrl } from "@/lib/api";
 import {
   Activity,
   Database,
@@ -104,14 +105,14 @@ export default function AdminDashboard() {
       };
       try {
         const t0 = performance.now();
-        const pRes = await fetch("http://localhost:5023/api/patient", {
+        const pRes = await fetch(apiUrl("/api/patient"), {
           headers,
         });
         const t1 = performance.now();
         setApiLatencyMs(Math.round(t1 - t0));
 
         const tDb0 = performance.now();
-        const dRes = await fetch("http://localhost:5023/api/doctor", {
+        const dRes = await fetch(apiUrl("/api/doctor"), {
           headers,
         });
         const tDb1 = performance.now();
@@ -125,7 +126,7 @@ export default function AdminDashboard() {
         setPatients(pData);
         setDoctors(dData);
 
-        const aRes = await fetch("http://localhost:5023/api/admin", {
+        const aRes = await fetch(apiUrl("/api/admin"), {
           headers,
         });
         if (!aRes.ok) throw new Error("Failed to load admins.");
@@ -159,7 +160,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch("http://localhost:5023/api/account/logout", {
+      await fetch(apiUrl("/api/account/logout"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

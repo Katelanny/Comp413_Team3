@@ -15,6 +15,7 @@ import {
   VISIT_RANGE_CLASS_NAME,
   type CompareSyncControl,
 } from "@/components/dashboard/InPlaceZoomViewport";
+import { apiUrl } from "@/lib/api";
 
 type PatientInfo = {
   firstName: string;
@@ -247,7 +248,7 @@ export default function PatientDashboard() {
   );
   const loadDashboard = async () => {
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5023/api/patient/dashboard", {
+    const res = await fetch(apiUrl("/api/patient/dashboard"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -274,7 +275,7 @@ export default function PatientDashboard() {
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:5023/api/account/logout", {
+      await fetch(apiUrl("/api/account/logout"), {
         method: "POST",
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
@@ -299,7 +300,7 @@ export default function PatientDashboard() {
 
   const fetchImages = async () => {
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5023/api/images", {
+    const res = await fetch(apiUrl("/api/images"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -331,7 +332,7 @@ export default function PatientDashboard() {
       setLesionsLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5023/api/prediction/${imageId}`,
+        apiUrl(`/api/prediction/${imageId}`),
         {
           headers: {
             Authorization: `Bearer ${token}`,

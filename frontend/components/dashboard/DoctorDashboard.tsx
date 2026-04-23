@@ -8,6 +8,7 @@ import {
   VISIT_RANGE_CLASS_NAME,
   type CompareSyncControl,
 } from "@/components/dashboard/InPlaceZoomViewport";
+import { apiUrl } from "@/lib/api";
 import { Search, User } from "lucide-react";
 
 export default function DoctorDashboard() {
@@ -195,7 +196,7 @@ export default function DoctorDashboard() {
     const fetchDashboard = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5023/api/doctor/dashboard", {
+        const res = await fetch(apiUrl("/api/doctor/dashboard"), {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -247,13 +248,13 @@ export default function DoctorDashboard() {
       try {
         const token = localStorage.getItem("token");
         const [detailsRes, patientRes, imagesRes] = await Promise.all([
-          fetch(`http://localhost:5023/api/doctor/patients/${selectedPatient.id}`, {
+          fetch(apiUrl(`/api/doctor/patients/${selectedPatient.id}`), {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch(`http://localhost:5023/api/patient/${selectedPatient.id}`, {
+          fetch(apiUrl(`/api/patient/${selectedPatient.id}`), {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch(`http://localhost:5023/api/doctor/patients/${selectedPatient.id}/images`, {
+          fetch(apiUrl(`/api/doctor/patients/${selectedPatient.id}/images`), {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -357,7 +358,7 @@ export default function DoctorDashboard() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5023/api/doctor/patients/${selectedPatient.id}/diagnosis-access`,
+        apiUrl(`/api/doctor/patients/${selectedPatient.id}/diagnosis-access`),
         {
           method: "PATCH",
           headers: {
@@ -408,7 +409,7 @@ export default function DoctorDashboard() {
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:5023/api/account/logout", {
+      await fetch(apiUrl("/api/account/logout"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -435,7 +436,7 @@ export default function DoctorDashboard() {
       const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `http://localhost:5023/api/prediction/${imageId}`,
+        apiUrl(`/api/prediction/${imageId}`),
         {
           method: "GET",
           headers: {

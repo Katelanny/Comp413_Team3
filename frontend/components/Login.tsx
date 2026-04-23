@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { User, Stethoscope } from 'lucide-react'
 import Logo from './Logo'
+import { apiUrl } from '@/lib/api'
 
 interface LoginProps {
     onNavigateToRegister: () => void;
@@ -26,7 +27,7 @@ const Login = ({ onNavigateToRegister }: LoginProps) => {
 
         // tries to fetch login and verify if the correct user type was selected
         try {
-            const res = await fetch('http://localhost:5023/api/account/login', {
+            const res = await fetch(apiUrl('/api/account/login'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
