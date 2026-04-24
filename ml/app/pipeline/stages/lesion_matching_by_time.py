@@ -1,4 +1,4 @@
-from datetime import datetime
+from collections import defaultdict
 
 from app.pipeline.types import BoundingBox, LesionAnalysis
 
@@ -15,63 +15,55 @@ def run_lesion_matching_by_time(
             - lesion.prev_lesion_id
             - lesion.relative_size_change
 
-    Assumes:
-        - lesion_results are from the same patient
-        - each LesionResult has a valid timestamp
-        - inputs may not be sorted by time
-
-    Behavior:
-        - Sorts results by timestamp internally
-        - Performs matching between consecutive timepoints only
-
-    Returns:
-        List[LesionResult] with updated lesion fields (same objects, mutated)
+    Groups by camera angle first, then sorts each group by timestamp,
+    so matching only happens between consecutive timepoints of the same view.
     """
-    lesion_results.sort(key=lambda x: x.timestamp)
-    for i in range(1, len(lesion_results)):
-        prev = lesion_results[i-1]
-        curr = lesion_results[i]
+    groups: dict[str, list[LesionAnalysis]] = defaultdict(list)
+    for analysis in lesion_results:
+        groups[analysis.camera_angle].append(analysis)
 
-        # if prev.camera_angle != curr.camera_angle:
-        #     continue
+    for group in groups.values():
+        group.sort(key=lambda x: x.timestamp)
 
-        matched_prev_lesions = set()
+        for i in range(1, len(group)):
+            prev = group[i - 1]
+            curr = group[i]
 
-        for lesion in curr.lesions:
-            best_iou = 0
-            best_match = None
-            # iou_threshold = 0.3
+            matched_prev_lesions = set()
 
-            for prev_lesion in prev.lesions:
-                # if prev_lesion.anatomical_site != lesion.anatomical_site:
-                #     continue
-                if prev_lesion.lesion_id in matched_prev_lesions:
-                    continue
+            for lesion in curr.lesions:
+                best_iou = 0
+                best_match = None
 
-                iou = calculate_iou(lesion.box, prev_lesion.box)
+                for prev_lesion in prev.lesions:
+                    if prev_lesion.lesion_id in matched_prev_lesions:
+                        continue
 
-                if iou > best_iou:
-                    best_iou = iou
-                    best_match = prev_lesion
-                
-            if best_match:
-                lesion.prev_lesion_id = best_match.lesion_id
-                matched_prev_lesions.add(best_match.lesion_id)
+                    iou = calculate_iou(lesion.box, prev_lesion.box)
 
-                area_prev = get_area(best_match.box)
-                area_curr = get_area(lesion.box)
+                    if iou > best_iou:
+                        best_iou = iou
+                        best_match = prev_lesion
 
-                if area_prev > 0:
-                    lesion.relative_size_change = (area_curr - area_prev) / area_prev
+                if best_match:
+                    lesion.prev_lesion_id = best_match.lesion_id
+                    matched_prev_lesions.add(best_match.lesion_id)
+
+                    area_prev = get_area(best_match.box)
+                    area_curr = get_area(lesion.box)
+
+                    if area_prev > 0:
+                        lesion.relative_size_change = (area_curr - area_prev) / area_prev
+                    else:
+                        lesion.relative_size_change = 0.0
                 else:
-                    lesion.relative_size_change = 0.0
-            else:
-                lesion.prev_lesion_id = None
-                lesion.relative_size_change = None
+                    lesion.prev_lesion_id = None
+                    lesion.relative_size_change = None
 
 
 def get_area(box: BoundingBox) -> float:
     return max(0, box.x2 - box.x1) * max(0, box.y2 - box.y1)
+
 
 def calculate_iou(boxA: BoundingBox, boxB: BoundingBox) -> float:
     xA = max(boxA.x1, boxB.x1)
@@ -87,4 +79,3 @@ def calculate_iou(boxA: BoundingBox, boxB: BoundingBox) -> float:
     iou = interArea / float(boxAArea + boxBArea - interArea) if (boxAArea + boxBArea - interArea) > 0 else 0
 
     return iou
-
