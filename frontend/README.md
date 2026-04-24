@@ -63,7 +63,7 @@ NEXT_PUBLIC_API_BASE_URL=https://tbp-backend-134310339623.us-central1.run.app
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+We deploy the Next.js app through the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
 
 **If the deployment summary says “No framework detected” and only lists files under `public/`** (SVGs, images), Vercel is **not** deploying Next.js routes—only static assets. Fix it in the project dashboard:
 
@@ -77,6 +77,4 @@ In the Vercel project, set **Environment variable**:
 - **Name:** `NEXT_PUBLIC_API_BASE_URL`
 - **Value:** `https://tbp-backend-134310339623.us-central1.run.app`
 
-Ensure the Cloud Run API allows **CORS** from your Vercel domain.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Ensure the Cloud Run API allows **CORS** from the Vercel domain.
