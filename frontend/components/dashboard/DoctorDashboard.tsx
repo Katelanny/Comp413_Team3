@@ -826,7 +826,7 @@ export default function DoctorDashboard() {
               <p>Score: {popup.lesion.score}</p>
               <p>Location: {popup.lesion.anatomical_site}</p>
               <p>Change: {popup.lesion.relative_size_change}</p>
-
+              <p>Previous Lesion: {popup.lesion.prev_lesion_id}</p>
               <button
                 className="mt-2 text-xs text-red-500"
                 onClick={() => {
