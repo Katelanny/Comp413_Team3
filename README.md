@@ -3,6 +3,8 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
+- [Live Deployments](#live-deployments)
+- [Demo Credentials](#demo-credentials)
 - [Repo Structure](#repo-structure)
 - [Frontend](#frontend)
 - [Backend](#backend)
@@ -30,6 +32,22 @@ Our project develops a system for analyzing and displaying longitudinal TBP imag
 
 Unless specified otherwise, the user should complete all steps outlined in this README to accomplish this use case. Note, this README links to other READMEs for more detail. Not every subdirectory has a README for the sake of cleanliness/structure. 
 
+## Live Deployments
+
+- Frontend (Vercel): `https://lesiontracker-eight.vercel.app/`
+- Backend (Cloud Run API): `https://tbp-backend-134310339623.us-central1.run.app`
+
+## Demo Credentials
+
+Below are credentials to login on the live deployment for demonstration.
+
+### Deployed demo accounts 
+
+- Doctor: `doctor` / `doctor`
+- Admin: `admin` / `admin123`
+- Patient with diagnosis access: `bfemalew010` / `patient1`
+- Patient without diagnosis access: `wmalew090` / `patient1`
+
 ## Repo Structure
 - `frontend/` contains code to run the frontend of the app
    - `app/` contains layout of the frontend page.
@@ -44,7 +62,7 @@ Unless specified otherwise, the user should complete all steps outlined in this 
    - `TBPBackend.Api/` contains files that define how the database is stored, structured, and authentication process.
    - `TBPBackend.Tests/` contains files that test the backend functionality.
 - `requirements&dependencies.md` is a file with all the dependencies needed to run each script.
-- `how-to-use.md` 
+- `how-to-use.md` contains step-by-step setup/run/demo instructions.
 - `project_description&functionDefinition.md`
 - `test_cases.md`
 
