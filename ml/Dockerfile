@@ -23,6 +23,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-build-isolation \
     'git+https://github.com/facebookresearch/detectron2.git'
 
+# Install DensePose project module used by pose_model.py
+RUN pip install --no-build-isolation \
+    'git+https://github.com/facebookresearch/detectron2.git#subdirectory=projects/DensePose'
+
 # Install GCS client
 RUN pip install google-cloud-storage
 

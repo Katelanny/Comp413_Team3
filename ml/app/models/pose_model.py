@@ -2,6 +2,16 @@ from app.pipeline.types import LoadedImage, PoseResult
 import torch
 import numpy as np
 import logging
+
+# Force torch.load to allow full unpickling for trusted DensePose checkpoints.
+# DensePose weights contain objects (e.g. numpy scalars) that fail PyTorch's
+# newer weights_only=True default. We trust our own GCS-hosted checkpoints.
+_original_torch_load = torch.load
+def _torch_load_full(*args, **kwargs):
+    kwargs.setdefault("weights_only", False)
+    return _original_torch_load(*args, **kwargs)
+torch.load = _torch_load_full
+
 from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from densepose import add_densepose_config

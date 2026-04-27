@@ -21,8 +21,8 @@ async def lifespan(app: FastAPI):
 
     # Initialize Pose Model using settings
     app.state.pose_model = PoseModel(
-        config_path="models/pose/pose_config.yaml",
-        weights_path="models/pose/model_final_162be9.pkl",
+        config_path=settings.pose_config_path,
+        weights_path=settings.pose_weights_path,
     )
     
     print(f"Loaded models using paths from environment: {settings.lesion_weights_path}")
