@@ -23,6 +23,7 @@ public class DoctorController : ControllerBase
         _imageService = imageService;
     }
 
+    /// Returns the dashboard for the authenticated doctor, including their patient list with last visit dates.
     [HttpGet("dashboard")]
     [Authorize(Policy = "DoctorOnly")]
     public async Task<ActionResult<DoctorDashboardDto>> GetDashboard()
@@ -67,6 +68,7 @@ public class DoctorController : ControllerBase
         });
     }
 
+    /// Returns full details for a patient, including images and lesions. Only accessible if the doctor has a visit with that patient.
     [HttpGet("patients/{patientId:long}")]
     [Authorize(Policy = "DoctorOnly")]
     public async Task<ActionResult<DoctorPatientDetailDto>> GetPatientDetail(long patientId)
@@ -123,6 +125,7 @@ public class DoctorController : ControllerBase
         });
     }
 
+    /// Returns signed image URLs for a patient. Requires a visit relationship between the doctor and the patient.
     [HttpGet("patients/{patientId:long}/images")]
     [Authorize(Policy = "DoctorOnly")]
     public async Task<ActionResult<List<PatientImageDto>>> GetPatientImages(long patientId)
@@ -152,6 +155,7 @@ public class DoctorController : ControllerBase
         }).ToList());
     }
 
+    /// Returns a list of all doctor profiles. Accessible to medical staff roles.
     [HttpGet]
     [Authorize(Policy = "MedicalStaff")]
     public async Task<ActionResult<IEnumerable<DoctorInfoDto>>> GetAllDoctors()
@@ -171,6 +175,7 @@ public class DoctorController : ControllerBase
         return Ok(doctors);
     }
 
+    /// Returns a single doctor profile by ID. Accessible to medical staff roles.
     [HttpGet("{id:long}")]
     [Authorize(Policy = "MedicalStaff")]
     public async Task<ActionResult<DoctorInfoDto>> GetDoctorById(long id)
@@ -193,6 +198,7 @@ public class DoctorController : ControllerBase
         return Ok(doctor);
     }
 
+    /// Grants or revokes a patient's access to view their own diagnosis. Only the treating doctor can change this.
     [HttpPatch("patients/{patientId:long}/diagnosis-access")]
     [Authorize(Policy = "DoctorOnly")]
     public async Task<ActionResult> SetPatientDiagnosisAccess(long patientId, [FromBody] SetDiagnosisAccessDto request)
@@ -215,6 +221,7 @@ public class DoctorController : ControllerBase
         return Ok(new { patientId = patient.Id, hasAccessToDiagnosis = patient.HasAccessToDiagnosis });
     }
 
+    /// Extracts the authenticated user's ID from the JWT claims.
     private string? GetUserId()
     {
         return User.FindFirstValue(JwtRegisteredClaimNames.Sub)

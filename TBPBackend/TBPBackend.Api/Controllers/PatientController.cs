@@ -23,6 +23,7 @@ public class PatientController : ControllerBase
         _imageService = imageService;
     }
 
+    /// Returns the dashboard for the authenticated patient, including images, lesions, and diagnosis access flag.
     [HttpGet("dashboard")]
     [Authorize(Policy = "PatientOnly")]
     public async Task<ActionResult<PatientDashboardDto>> GetDashboard()
@@ -70,6 +71,7 @@ public class PatientController : ControllerBase
         return Ok(dashboard);
     }
 
+    /// Returns a list of all patient profiles. Accessible to medical staff roles.
     [HttpGet]
     [Authorize(Policy = "MedicalStaff")]
     public async Task<ActionResult<IEnumerable<PatientInfoDto>>> GetAllPatients()
@@ -94,6 +96,7 @@ public class PatientController : ControllerBase
         return Ok(patients);
     }
 
+    /// Returns a single patient profile by ID. Accessible to medical staff roles.
     [HttpGet("{id:long}")]
     [Authorize(Policy = "MedicalStaff")]
     public async Task<ActionResult<PatientInfoDto>> GetPatientById(long id)
@@ -121,6 +124,7 @@ public class PatientController : ControllerBase
         return Ok(patient);
     }
 
+    /// Returns visit notes from the patient's doctors. Only available if the patient has been granted diagnosis access.
     [HttpGet("doctor-notes")]
     [Authorize(Policy = "PatientOnly")]
     public async Task<ActionResult<List<DoctorNoteDto>>> GetDoctorNotes()
@@ -154,6 +158,7 @@ public class PatientController : ControllerBase
         return Ok(doctorNotes);
     }
 
+    /// Extracts the authenticated user's ID from the JWT claims.
     private string? GetUserId()
     {
         return User.FindFirstValue(JwtRegisteredClaimNames.Sub)

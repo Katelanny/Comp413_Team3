@@ -16,6 +16,7 @@ public class PredictionController : ControllerBase
         _predictionService = predictionService;
     }
 
+    /// Returns the most recent ML prediction for the given image, including all detected lesions.
     [HttpGet("{imageId:long}")]
     [Authorize]
     public async Task<ActionResult<PredictionResponseDto>> GetPredictionByImageId(long imageId)

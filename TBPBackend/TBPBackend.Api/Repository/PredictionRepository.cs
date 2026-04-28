@@ -14,11 +14,14 @@ public class PredictionRepository : IPredictionRepository
         _context = context;
     }
 
+    /// Returns the UserImage record with the given primary key, or null if not found.
     public async Task<UserImage?> GetUserImageByIdAsync(long imageId)
     {
         return await _context.UserImages.FindAsync(imageId);
     }
 
+    /// Returns the most recent prediction for the given image, including all lesion detections.
+    /// Returns null if no prediction exists for the image.
     public async Task<ImagePrediction?> GetLatestPredictionByImageIdAsync(long imageId)
     {
         return await _context.ImagePredictions

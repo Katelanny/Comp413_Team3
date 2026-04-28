@@ -18,6 +18,7 @@ public class ImagesController : ControllerBase
         _imageService = imageService;
     }
 
+    /// Returns signed URLs for all images across all users.
     [HttpGet("all")]
     public async Task<IActionResult> GetAllImages()
     {
@@ -34,6 +35,7 @@ public class ImagesController : ControllerBase
         return Ok(result);
     }
 
+    /// Returns signed image URLs and metadata for the authenticated user.
     [HttpGet]
     public async Task<IActionResult> GetMyImageMetadata()
     {
@@ -53,6 +55,7 @@ public class ImagesController : ControllerBase
         return Ok(result);
     }
 
+    /// Returns all image records with signed URLs for the authenticated user.
     [HttpPost]
     public async Task<IActionResult> GetMyImages()
     {
@@ -66,6 +69,7 @@ public class ImagesController : ControllerBase
         return Ok(new { images });
     }
 
+    /// Returns a signed URL for a single image belonging to the authenticated user.
     [HttpPost("{filename}")]
     public async Task<IActionResult> GetMyImage(string filename)
     {
@@ -79,6 +83,7 @@ public class ImagesController : ControllerBase
         return Ok(result);
     }
 
+    /// Links a list of GCS filenames to the authenticated user's account, skipping any already linked.
     [HttpPost("link")]
     public async Task<IActionResult> LinkImages([FromBody] LinkImagesRequest request)
     {
@@ -92,6 +97,7 @@ public class ImagesController : ControllerBase
         return Ok(new { linked = count, message = $"{count} new image(s) linked to your account." });
     }
 
+    /// Links images with full metadata (camera angle, dimensions, model info) to the authenticated user's account.
     [HttpPost("link-with-metadata")]
     public async Task<IActionResult> LinkImagesWithMetadata([FromBody] LinkImagesWithMetadataRequest request)
     {
@@ -105,6 +111,7 @@ public class ImagesController : ControllerBase
         return Ok(new { linked = count, message = $"{count} new image(s) linked to your account." });
     }
 
+    /// Extracts the authenticated user's ID from the JWT claims.
     private string? GetUserId()
     {
         return User.FindFirstValue(JwtRegisteredClaimNames.Sub)

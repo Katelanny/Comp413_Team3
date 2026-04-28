@@ -21,6 +21,7 @@ public class AdminController : ControllerBase
         _db = db;
     }
 
+    /// Returns the admin dashboard with all users grouped by role and the 10 most recent visits.
     [HttpGet("dashboard")]
     public async Task<ActionResult<AdminDashboardDto>> GetDashboard()
     {
@@ -97,6 +98,7 @@ public class AdminController : ControllerBase
         });
     }
 
+    /// Returns a list of all admin profiles.
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AdminInfoDto>>> GetAllAdmins()
     {
@@ -115,6 +117,7 @@ public class AdminController : ControllerBase
         return Ok(admins);
     }
 
+    /// Returns a single admin profile by ID.
     [HttpGet("{id:long}")]
     public async Task<ActionResult<AdminInfoDto>> GetAdminById(long id)
     {
@@ -136,6 +139,7 @@ public class AdminController : ControllerBase
         return Ok(admin);
     }
 
+    /// Extracts the authenticated user's ID from the JWT claims.
     private string? GetUserId()
     {
         return User.FindFirstValue(JwtRegisteredClaimNames.Sub)

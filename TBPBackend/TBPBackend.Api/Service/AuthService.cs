@@ -11,7 +11,7 @@ public class AuthService : IAuthService
     private readonly IAccountRepo _accountRepo;
     private readonly ITokenService _tokenService;
     private readonly UserManager<AppUser> _userManager;
-    
+
     public AuthService(IAccountRepo accountRepo, ITokenService tokenService, UserManager<AppUser> userManager)
     {
         _accountRepo = accountRepo;
@@ -19,6 +19,7 @@ public class AuthService : IAuthService
         _userManager = userManager;
     }
 
+    /// Returns cookie options scoped to the account path with the given expiry.
     public static CookieOptions PartialCookieOptions(DateTimeOffset expires) => new CookieOptions
     {
         HttpOnly = true,
@@ -27,7 +28,8 @@ public class AuthService : IAuthService
         Expires = expires,
         Path = "/api/account"
     };
-    
+
+    /// Creates a new user account, assigns a role, and returns access and refresh tokens.
     public async Task<ServiceResponse> Register(RegisterDto dto)
     {
         var user = new AppUser
@@ -50,7 +52,8 @@ public class AuthService : IAuthService
             token, PartialCookieOptions(DateTimeOffset.UtcNow.AddDays(7)), accessToken
         );
     }
-    
+
+    /// Validates credentials and returns access and refresh tokens on success.
     public async Task<ServiceResponse> Login(LoginDto dto)
     {
         var token = _tokenService.CreateRefreshToken();
@@ -60,7 +63,7 @@ public class AuthService : IAuthService
         {
             return ServiceResponse.Fail(loginRes.Message ?? "Something went wrong logging in");
         }
-        
+
         var roles = await _userManager.GetRolesAsync(loginRes.User);
         var accessToken = _tokenService.CreateAccessToken(loginRes.User, roles);
         return ServiceResponse.Ok
@@ -69,6 +72,7 @@ public class AuthService : IAuthService
         );
     }
 
+    /// Validates a refresh token and issues a new access token if the token is still valid.
     public async Task<ServiceResponse> CheckRefreshToken(string refreshToken)
     {
         var refreshHash = _tokenService.HashRefreshToken(refreshToken);
@@ -83,7 +87,8 @@ public class AuthService : IAuthService
         return ServiceResponse.Ok(
                 refreshToken, PartialCookieOptions(DateTimeOffset.UtcNow), accessToken);
     }
-    
+
+    /// Revokes the refresh token associated with the given hash, ending the session.
     public async Task<bool> Logout(string refreshHash)
     {
         var status = await _accountRepo.Logout(refreshHash);

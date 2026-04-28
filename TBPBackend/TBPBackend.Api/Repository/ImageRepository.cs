@@ -14,6 +14,7 @@ public class ImageRepository : IImageRepository
         _context = context;
     }
 
+    /// Returns all image records across all users, ordered by creation date.
     public async Task<List<UserImage>> GetAllImagesAsync()
     {
         return await _context.UserImages
@@ -21,6 +22,7 @@ public class ImageRepository : IImageRepository
             .ToListAsync();
     }
 
+    /// Returns all images belonging to the given user, ordered by filename.
     public async Task<List<UserImage>> GetImagesByUserIdAsync(string userId)
     {
         return await _context.UserImages
@@ -29,12 +31,14 @@ public class ImageRepository : IImageRepository
             .ToListAsync();
     }
 
+    /// Returns the image record matching the given user and filename, or null if not found.
     public async Task<UserImage?> GetImageByUserAndFilenameAsync(string userId, string filename)
     {
         return await _context.UserImages
             .FirstOrDefaultAsync(ui => ui.AppUserId == userId && ui.FileName == filename);
     }
 
+    /// Persists a single image record and returns it.
     public async Task<UserImage> AddImageAsync(UserImage image)
     {
         _context.UserImages.Add(image);
@@ -42,6 +46,7 @@ public class ImageRepository : IImageRepository
         return image;
     }
 
+    /// Adds image records for any filenames not already linked to the user. Skips duplicates.
     public async Task<List<UserImage>> AddImagesAsync(string userId, List<string> filenames)
     {
         var existing = await _context.UserImages
@@ -68,6 +73,7 @@ public class ImageRepository : IImageRepository
         return newImages;
     }
 
+    /// Adds image records with full metadata for any filenames not already linked to the user. Skips duplicates.
     public async Task<List<UserImage>> AddImagesWithMetadataAsync(string userId, List<ImageMetadata> images)
     {
         var existing = await _context.UserImages

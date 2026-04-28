@@ -23,7 +23,8 @@ public class AccountController : ControllerBase
         _authService = authService;
         _userManager = userManager;
     }
-    
+
+    /// Authenticates a user by username and password. Sets a refresh token cookie and returns a JWT access token.
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto model)
     {
@@ -48,6 +49,7 @@ public class AccountController : ControllerBase
         });
     }
 
+    /// Creates a new user account. Sets a refresh token cookie and returns a JWT access token.
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto model)
     {
@@ -71,6 +73,7 @@ public class AccountController : ControllerBase
         });
     }
 
+    /// Issues a new JWT access token if the refresh token cookie is present and valid.
     [HttpPost("refresh")]
     public async Task<ActionResult<AuthResponseDto>> Refresh()
     {
@@ -86,7 +89,8 @@ public class AccountController : ControllerBase
             Token = service.AccessToken,
         });
     }
-    
+
+    /// Revokes the refresh token and clears the refresh token cookie, ending the session.
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {

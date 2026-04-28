@@ -13,6 +13,8 @@ public class PredictionService : IPredictionService
         _repo = repo;
     }
 
+    /// Returns the most recent ML prediction for the given image, including all lesion detections.
+    /// Returns null if the image does not exist. Returns an empty predictions list if no prediction has been run yet.
     public async Task<PredictionResponseDto?> GetPredictionByImageIdAsync(long imageId)
     {
         var image = await _repo.GetUserImageByIdAsync(imageId);
