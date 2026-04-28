@@ -27,6 +27,14 @@ cd TBPBackend
 dotnet test
 ```
 
+### ML
+```bash
+cd ml
+python -m pip install pytest pytest-cov
+python -m pip install pytest-asyncio
+python -m pip install pytest-mock
+python -m pytest -v
+```
 ---
 
 ## Backend test cases

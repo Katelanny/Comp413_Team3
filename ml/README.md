@@ -234,4 +234,25 @@ PredictResponse:
             format: date-time
           error:
             type: string
-    ```
+  ```
+
+# For testing
+Install Test Dependencies
+Install the required testing packages using pip:
+
+```bash
+python -m pip install pytest pytest-cov
+python -m pip install pytest-asyncio
+python -m pip install pytest-mock
+```
+
+Running the Tests
+To run the entire test suite with verbose output (showing each test name and its pass/fail status):
+```bash
+python -m pytest -v
+```
+Checking Test Coverage
+To run the tests and see exactly which lines of code are missing test coverage, run:
+```bash
+python -m pytest -v --cov=app --cov-report=term-missing
+```
