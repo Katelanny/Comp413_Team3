@@ -105,8 +105,7 @@ def calculate_iou(boxA: BoundingBox, boxB: BoundingBox) -> float:
     the same physical object.
 
     The formula used is:
-    $$IoU = \frac{Area\ of\ Overlap}{Area\ of\ Union}$$
-
+    $$IoU = \\frac{Area\\ of\\ Overlap}{Area\\ of\\ Union}$$
     Args:
         boxA: First bounding box.
         boxB: Second bounding box.
