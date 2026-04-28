@@ -81,6 +81,9 @@ export function InPlaceZoomViewport({
     el.scrollTop = 0;
   }, [imageKey, isSynced]);
 
+  /*
+  * gets information on scroll for each side
+  */
   useLayoutEffect(() => {
     if (isSynced) return;
     const el = containerRef.current;
@@ -101,6 +104,9 @@ export function InPlaceZoomViewport({
     el.scrollTop = Math.min(maxT, Math.max(0, el.scrollTop));
   }, [internalScale, isSynced]);
 
+  /*
+  * compares the left and right side images scroll
+  */
   useLayoutEffect(() => {
     if (!compareSync) return;
     const el = containerRef.current;

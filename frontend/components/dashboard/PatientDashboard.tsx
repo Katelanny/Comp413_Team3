@@ -38,6 +38,9 @@ type ImageRow = {
   signedUrl: string;
 };
 
+/*
+* function formats the date for the user 
+*/
 function formatDate(iso: string) {
   try {
     return new Date(iso).toLocaleDateString(undefined, {
@@ -94,7 +97,6 @@ export default function PatientDashboard() {
   const [photoIdx, setPhotoIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   /** Linked zoom/pan for compare mode (both panels). */
   const leftCompareScrollRef = useRef<HTMLDivElement | null>(null);
   const rightCompareScrollRef = useRef<HTMLDivElement | null>(null);
@@ -118,6 +120,9 @@ export default function PatientDashboard() {
     setCompareScroll({ l, t });
   }, []);
 
+  /*
+  * Const compares the left and right side scroll and zoom in
+  */ 
   const handleCompareBumpScale = useCallback(
     (delta: number, el: HTMLDivElement) => {
       const sw = el.scrollWidth;
@@ -138,6 +143,9 @@ export default function PatientDashboard() {
     []
   );
 
+  /*
+  * Const compares the left and right side scroll
+  */ 
   const handleCompareWheelZoom = useCallback(
     (
       deltaScale: number,
@@ -165,6 +173,9 @@ export default function PatientDashboard() {
     []
   );
 
+  /*
+  * Const resets both the left and right side images
+  */ 
   const handleCompareReset = useCallback(() => {
     compareZoomAnchorRef.current = null;
     setCompareScale(1);
@@ -175,6 +186,9 @@ export default function PatientDashboard() {
     });
   }, []);
 
+  /*
+  * effect implements left and right side are synchronous
+  */ 
   useLayoutEffect(() => {
     const a = compareZoomAnchorRef.current;
     compareZoomAnchorRef.current = null;
@@ -203,6 +217,9 @@ export default function PatientDashboard() {
     setCompareScroll({ l: 0, t: 0 });
   }, [leftIdx, rightIdx]);
 
+  /*
+  * gets values for the left side image to later compare
+  */ 
   const leftCompareSync = useMemo(
     (): CompareSyncControl => ({
       scale: compareScale,
@@ -225,6 +242,9 @@ export default function PatientDashboard() {
     ]
   );
 
+  /*
+  * gets values for the right side image to later compare
+  */
   const rightCompareSync = useMemo(
     (): CompareSyncControl => ({
       scale: compareScale,
@@ -246,6 +266,10 @@ export default function PatientDashboard() {
       handleCompareReset,
     ]
   );
+
+  /*
+  * fetches the patient dashboard
+  */
   const loadDashboard = async () => {
     const token = localStorage.getItem("token");
     const res = await fetch(apiUrl("/api/patient/dashboard"), {
@@ -272,6 +296,9 @@ export default function PatientDashboard() {
     setRightIdx((i) => (images.length === 0 ? 0 : Math.min(i, max)));
   }, [images.length]);
 
+  /*
+  * logs out the patient 
+  */
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -298,6 +325,9 @@ export default function PatientDashboard() {
   const leftImg = images[leftIdx];
   const rightImg = images[rightIdx];
 
+  /*
+  * fetches the images of the patient
+  */
   const fetchImages = async () => {
     const token = localStorage.getItem("token");
     const res = await fetch(apiUrl("/api/images"), {
@@ -324,6 +354,9 @@ export default function PatientDashboard() {
     }
   };
 
+  /*
+  * fetches lesion information for the patient images 
+  */
   const fetchLesionsForImage = async (
     imageId: number,
     side: "left" | "right"
@@ -394,6 +427,7 @@ export default function PatientDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-100 text-neutral-900">
+      {/* Header of the page */}
       <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-neutral-200">
         <div className="flex items-center gap-4">
           <Logo />
@@ -529,7 +563,7 @@ export default function PatientDashboard() {
                 {"No photos are linked to your account yet. Your care team will add images after your visits."}
               </p>
             )}
-
+            {/* Image UI */}
             {viewMode === "compare" && images.length > 0 && leftImg && rightImg && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
                 <div className="space-y-3 min-w-0">
@@ -553,6 +587,7 @@ export default function PatientDashboard() {
                       No image
                     </div>
                   )}
+                  {/* Left side image info */}
                   <div className="rounded-xl border border-neutral-200 bg-neutral-50/90 px-3 py-3 space-y-2">
                     <div className="flex items-center justify-between gap-2 text-xs font-medium text-neutral-800">
                       <span>Left — visit</span>
@@ -584,7 +619,7 @@ export default function PatientDashboard() {
                     </p>
                   </div>
                 </div>
-
+                {/* Right side image info */}
                 <div className="space-y-3 min-w-0">
                   {rightImg.signedUrl ? (
                     <InPlaceZoomViewport
@@ -642,6 +677,7 @@ export default function PatientDashboard() {
 
             {viewMode === "timeline" && images.length > 0 && currentPhoto && (
               <div className="rounded-2xl border border-neutral-200 bg-gradient-to-b from-white to-neutral-50/90 overflow-hidden">
+                {/* Timeline UI*/}
                 <div className="px-3 pt-3 pb-2 border-b border-neutral-100 flex items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold text-neutral-800">
                     Timeline
@@ -752,6 +788,7 @@ export default function PatientDashboard() {
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Patient diagnosis */}
               {lesions.map((l) => (
                 <div key={l.id} className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm">
                   <div className="flex flex-wrap gap-x-6 gap-y-1">
@@ -767,6 +804,7 @@ export default function PatientDashboard() {
             </div>
           )}
         </section>
+        {/* lesion popup */}
         {canViewDiagnosis &&
           lesionPopups.map((popup) => (
             <div

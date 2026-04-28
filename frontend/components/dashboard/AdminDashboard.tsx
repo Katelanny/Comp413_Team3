@@ -94,6 +94,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /*
+  * gets information on patients, doctors, and admin
+  */
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -149,6 +152,9 @@ export default function AdminDashboard() {
     load();
   }, []);
 
+  /*
+  * shows the latest patient accounts create
+  */
   const recentPatients = [...patients]
     .sort(
       (a, b) =>
@@ -156,6 +162,9 @@ export default function AdminDashboard() {
     )
     .slice(0, 5);
 
+  /*
+  * los out the admin user
+  */
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -183,6 +192,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
+      {/* Header of the page */}
       <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-neutral-200">
         <div className="flex items-center gap-4">
           <Logo />
@@ -214,7 +224,7 @@ export default function AdminDashboard() {
             {error}
           </div>
         )}
-
+        {/* Main section of the dashboard */}
         <div className="max-w-6xl mx-auto space-y-6">
           <section className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
             <h2 className="text-lg font-bold text-neutral-900 mb-4">
@@ -301,7 +311,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </section>
-
+          {/* Recent patient section */}
           <section className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
             <h2 className="text-lg font-bold text-neutral-900 mb-4">
               Recent patient registrations
