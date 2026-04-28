@@ -1,3 +1,23 @@
+"""
+Lesion Detection Pipeline Stage.
+
+This module encapsulates the logic for executing lesion detection on a batch 
+of pre-loaded images. It serves as a wrapper around the `LesionModel`, 
+handling the transition from raw image arrays to structured analysis objects.
+
+Key Responsibilities:
+- Input Validation: Operates under the contract that images have been 
+  successfully downloaded and decoded.
+- Batch Inference: Interfaces with the Detectron2-based LesionModel to 
+  perform object detection.
+- Error Isolation: Catches and logs model-level exceptions to prevent 
+  the entire pipeline from crashing during inference.
+
+Interactions:
+- Input: `LoadedImage` objects containing NumPy arrays.
+- Output: `LesionAnalysis` objects containing bounding boxes and masks.
+"""
+
 import logging
 
 from app.pipeline.types import LesionAnalysis

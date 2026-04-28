@@ -1,3 +1,18 @@
+"""
+Main entry point for the FastAPI application.
+
+This module initializes the FastAPI instance, manages the application lifecycle 
+via a lifespan context manager, and sets up global state for machine learning models.
+
+Key Responsibilities:
+- Lifespan Management: Handles pre-startup logic including downloading model weights 
+  from cloud storage (GCS) and instantiating Detectron2 models into the app state.
+- Dependency Injection: Models are attached to `app.state` to be accessible across 
+  all API requests.
+- Routing: Registers the primary API router containing prediction endpoints.
+- Configuration: Utilizes global settings for environment-specific paths and metadata.
+"""
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
@@ -9,6 +24,14 @@ from download_models import download_model_files
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Handles the startup and shutdown sequence of the FastAPI application.
+
+    Startup: 
+    - Downloads model weights from Google Cloud Storage (GCS) via `download_model_files()`.
+    - Initializes `LesionModel` and `PoseModel` using environment-specific settings.
+    - Stores model instances in `app.state` to avoid re-loading weights on every request.
+    """
     # Downloading the weights first
     print("Downloading model files from GCS...")
     download_model_files()
@@ -29,11 +52,18 @@ async def lifespan(app: FastAPI):
 
     yield  # app runs here
 
-    # SHUTDOWN (optional cleanup)
-    # e.g., release GPU memory, close sessions
-
 
 def create_app() -> FastAPI:
+    """
+    Factory function to initialize and configure the FastAPI application instance.
+
+    - Sets application metadata (title, description, version).
+    - Attaches the lifespan handler for resource management.
+    - Includes the primary API router for endpoint registration.
+
+    Returns:
+        FastAPI: The fully configured application instance.
+    """
     app = FastAPI(
         title=settings.app_name,
         description="API for lesion detection, pose estimation, and temporal analysis",

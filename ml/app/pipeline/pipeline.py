@@ -1,3 +1,23 @@
+"""
+Main Pipeline Orchestration Module.
+
+This module defines the core execution logic for the ML inference workflow. 
+It coordinates the sequence of operations required to transform raw image 
+URLs into structured lesion and pose predictions with temporal alignment.
+
+Workflow Sequence:
+1. Asynchronous Acquisition: Fetches and decodes images concurrently.
+2. Error Partitioning: Separates successfully loaded images from network failures.
+3. Lesion Detection: Executes object detection to identify potential lesions.
+4. Pose Estimation: Performs DensePose analysis to provide spatial context (UV coordinates).
+5. Temporal Matching: Correlates detected lesions across different timepoints.
+6. Serialization: Converts internal analysis objects into API-compliant predictions.
+
+The pipeline follows a 'Fail-Fast but Partial-Success' model. If specific 
+images fail at any stage, they are logged as ImageErrors, while successful 
+images continue through the remaining stages.
+"""
+
 from app.pipeline.types import ImageRequest, LesionAnalysis, ImageError, Prediction
 from app.services.image_loader import load_images
 

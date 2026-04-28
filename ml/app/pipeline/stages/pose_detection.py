@@ -1,3 +1,23 @@
+"""
+Pose Detection and Anatomical Mapping Stage.
+
+This module integrates DensePose estimation into the analysis workflow. 
+It projects localized lesions from image-pixel space into body-centric 
+coordinates (UV mapping) and identifies the specific anatomical site 
+associated with each detection.
+
+Key Features:
+- Coordinate Transformation: Scales pixel-level coordinates to match the 
+  fixed internal resolution of the DensePose output matrices (I, U, V).
+- Anatomical Classification: Uses the standard DensePose 24-part segmentation 
+  map to label lesions (e.g., "Torso Front", "Lower Arm Left Back").
+- Surface Mapping: Extracts U and V surface coordinates to enable 
+  high-precision temporal matching that is robust to changes in camera distance.
+
+Note:
+This stage mutates the `Lesion` objects within the `LesionAnalysis` 
+collection.
+"""
 import logging
 
 from app.pipeline.types import LesionAnalysis

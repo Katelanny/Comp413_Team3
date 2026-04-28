@@ -1,3 +1,24 @@
+"""
+Temporal Lesion Matching and Change Analysis Stage.
+
+This module implements the logic for tracking lesions across multiple 
+timepoints. It uses spatial heuristics (Intersection over Union) to 
+identify the same lesion in consecutive images, allowing for the 
+calculation of longitudinal changes.
+
+Key Logic:
+1. Spatial Grouping: Isolates images by camera angle to ensure 
+   comparisons only happen between consistent views.
+2. Chronological Sorting: Processes images in temporal order.
+3. IoU Matching: Uses a greedy matching algorithm based on bounding box 
+   overlap to link lesions at time $t$ to lesions at time $t-1$.
+4. Growth Metrics: Computes the percentage change in surface area 
+   between matched detections.
+
+Note: This stage performs in-place mutation of the Lesion objects 
+within the LesionAnalysis containers.
+"""
+
 from collections import defaultdict
 
 from app.pipeline.types import BoundingBox, LesionAnalysis
@@ -62,10 +83,37 @@ def run_lesion_matching_by_time(
 
 
 def get_area(box: BoundingBox) -> float:
+    """
+    Calculates the 2D surface area of a bounding box.
+
+    Args:
+        box: The BoundingBox containing x1, y1, x2, y2 coordinates.
+
+    Returns:
+        float: The area in pixel units squared. Returns 0 for invalid 
+               or collapsed boxes.
+    """
     return max(0, box.x2 - box.x1) * max(0, box.y2 - box.y1)
 
 
 def calculate_iou(boxA: BoundingBox, boxB: BoundingBox) -> float:
+    """
+    Computes the Intersection over Union (IoU) of two bounding boxes.
+
+    IoU is a metric between 0.0 and 1.0 used to measure spatial overlap. 
+    A higher value indicates that the boxes are more likely to represent 
+    the same physical object.
+
+    The formula used is:
+    $$IoU = \frac{Area\ of\ Overlap}{Area\ of\ Union}$$
+
+    Args:
+        boxA: First bounding box.
+        boxB: Second bounding box.
+
+    Returns:
+        float: The overlap ratio (0.0 to 1.0).
+    """
     xA = max(boxA.x1, boxB.x1)
     yA = max(boxA.y1, boxB.y1)
     xB = min(boxA.x2, boxB.x2)

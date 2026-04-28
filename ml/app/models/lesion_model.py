@@ -1,3 +1,19 @@
+"""
+Lesion Detection Model Wrapper.
+
+This module provides the `LesionModel` class, which encapsulates a Detectron2 
+Instance Segmentation model. It handles model initialization, device 
+allocation (CPU/GPU), and the post-processing of raw prediction tensors 
+into standardized application types.
+
+Key Features:
+- Configuration Management: Loads Detectron2 YAML configs and .pth weights.
+- Inference Logic: Performs sequential image inference.
+- Data Transformation: Converts Detectron2 `Instances` (tensors) into 
+  `Lesion` objects, including bounding box extraction and binary mask 
+  to polygon conversion via OpenCV.
+"""
+
 import cv2
 import numpy as np
 import torch
@@ -89,7 +105,6 @@ class LesionModel:
     def _mask_to_polygon(self, mask: np.ndarray) -> list[list[float]]:
         """
         Convert binary mask → polygon(s).
-        Minimal version (can improve later). #TODO: ?
         """
 
         contours, _ = cv2.findContours(

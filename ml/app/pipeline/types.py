@@ -1,3 +1,14 @@
+"""
+Pipeline Type Definitions and Data Contracts.
+
+This module centralizes the schemas used throughout the application, categorized into:
+1. API Schemas: Pydantic models for external request/response validation.
+2. Internal Dataclasses: Optimized structures for in-memory image and model data.
+3. Pipeline Outputs: Aggregated results that combine computer vision outputs 
+   with temporal analysis logic.
+
+"""
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -6,26 +17,30 @@ from pydantic import BaseModel, HttpUrl
 
 ### API SCHEMAS
 
-# Request:
 class ImageRequest(BaseModel):
+    """Schema for a single image source within a prediction request."""
     img_id: str
     url: HttpUrl
     timestamp: datetime
-    camera_angle: str  # TODO: convert to Enum
+    camera_angle: str
 
 class PredictRequest(BaseModel):
+    """The root request object containing patient metadata and image batch URLs."""
     patient_id: str
     images: list[ImageRequest]
 
-
-# Response:
 class BoundingBox(BaseModel):
+    """Standard [x1, y1, x2, y2] coordinates for object localization."""
     x1: float
     y1: float
     x2: float
     y2: float
 
 class Lesion(BaseModel):
+    """
+    Representation of a detected lesion, including its geometry, 
+    confidence score, and optional UV/Temporal mapping data.
+    """
     lesion_id: str
     box: BoundingBox
     score: float
@@ -39,17 +54,32 @@ class Lesion(BaseModel):
     relative_size_change:  float | None = None
 
 class Prediction(BaseModel):
+    """
+    Structured results for a single successfully processed image.
+    
+    Contains the collection of all detected lesions and metadata identifying 
+    the specific timepoint and source image. This acts as the primary 
+    payload for successful analysis.
+    """
     img_id: str
     timestamp: datetime
     num_lesions: int
     lesions: list[Lesion]
 
 class ImageError(BaseModel):
+    """
+    Error container for individual image processing failures.
+    
+    Ensures that if a single image fails (due to download timeout, 
+    corruption, or inference errors), the specific failure is logged 
+    without crashing the entire batch request.
+    """
     img_id: str
     timestamp: datetime
     error: str
 
 class PredictResponse(BaseModel):
+    """The final structured output returned to the client, including errors."""
     patient_id: str
     predictions: list[Prediction]
     errors: list[ImageError]
@@ -60,17 +90,22 @@ class PredictResponse(BaseModel):
 @dataclass
 class LoadedImage:
     """
-    Image after downloading + decoding.
+    Represents an image that has been successfully retrieved and decoded 
+    into a NumPy array, ready for model inference.
     """
     img_id: str
     timestamp: datetime
-    camera_angle: str #TODO: enum?
+    camera_angle: str
     image: np.ndarray  # H x W x C
 
 ### PIPELINE OUTPUTS
 
 @dataclass
 class LesionAnalysis:
+    """
+    The intermediate result of a single image's processing, combining 
+    detected lesions with optional pose/person localization data.
+    """
     img_id: str
     timestamp: datetime
     camera_angle: str

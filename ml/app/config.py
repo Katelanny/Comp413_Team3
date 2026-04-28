@@ -1,3 +1,20 @@
+"""
+Configuration Management Module.
+
+This module defines the schema for application settings and environment variables 
+using Pydantic's BaseSettings. It provides a centralized, type-safe way to 
+manage model paths, API metadata, and execution modes.
+
+Key Features:
+- Environment Variable Overrides: Automatically maps shell environment variables 
+  (e.g., APP_NAME) to class attributes.
+- Local Development Support: Loads configurations from a `.env` file if present.
+- Model Configuration: Centralizes paths for Detectron2 config files and weight 
+  checkpoints (.pth) for both Lesion and Pose models.
+- Singleton Pattern: Exports a single `settings` instance to ensure consistent 
+  configuration across the entire FastAPI lifecycle.
+"""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):

@@ -1,3 +1,18 @@
+"""
+Image Loading and Preprocessing Service.
+
+This module provides high-performance, asynchronous image acquisition utilities. 
+It handles the full lifecycle of bringing external image data into the pipeline:
+fetching via HTTP, managing concurrent network limits, and decoding binary 
+payloads into standard numerical formats for ML inference.
+
+Design Patterns:
+- Concurrency Control: Uses semaphores to prevent connection exhaustion.
+- Graceful Degradation: Captures failures (network or decode) into structured 
+  Error types rather than raising exceptions, ensuring the entire batch isn't 
+  lost if one image fails.
+"""
+
 import asyncio
 from io import BytesIO
 

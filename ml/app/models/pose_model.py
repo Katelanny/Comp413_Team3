@@ -1,3 +1,22 @@
+"""
+Pose Estimation Model Wrapper (DensePose).
+
+This module provides the `PoseModel` class, which manages a Detectron2-based 
+DensePose architecture. Unlike standard pose estimation that identifies 
+skeletal joints, DensePose provides a dense mapping of image pixels to 
+the 3D surface of the human body using a UV coordinate system.
+
+Key Responsibilities:
+- Patching & Compatibility: Overrides `torch.load` to support legacy 
+  DensePose checkpoints with complex picklable metadata.
+- Surface Mapping: Extracts Fine Segmentation (I), and Surface Coordinates (U, V) 
+  from the model's prediction head.
+- Coordination: Transforms pixel-space detections into body-part-centric 
+  matrices for downstream anatomical mapping.
+- Error Resilience: Handles cases where no humans are detected in the frame 
+  by returning an empty state instead of crashing.
+"""
+
 from app.pipeline.types import LoadedImage, PoseResult
 import torch
 import numpy as np
@@ -29,8 +48,6 @@ class PoseModel:
             weights_path: Path to model weights
             device: "cuda" or "cpu" for gpu or cpu
         """
-        # TODO: load model (e.g., Detectron2 or other)
-        # raise NotImplementedError("Pose model initialization not implemented")
         #Setting up Detectron2 DensePose model
         self.cfg = get_cfg()
         add_densepose_config(self.cfg)
@@ -65,10 +82,6 @@ class PoseModel:
         Returns:
             list[PoseResult]
         """
-
-        # TODO:
-        # raise NotImplementedError("Pose prediction not implemented")
-
         if not images:
             return []
         
