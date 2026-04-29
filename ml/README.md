@@ -39,6 +39,12 @@ pip install -r app/requirements.txt
 pip install --no-build-isolation 'git+[https://github.com/facebookresearch/detectron2.git](https://github.com/facebookresearch/detectron2.git)'
 ```
 
+#Install local versions of detectron2 and densepose in editable mode
+
+pip install -e .\detectron2
+pip install -e .\detectron2\projects\DensePose
+
+
 ### 3. Start Application
 ```bash
 uvicorn app.main:app
@@ -48,6 +54,21 @@ To view the endpoints, navigate to:
 ```bash
   http://127.0.0.1:8000/docs
 ```
+
+# Troubleshooting Setup
+
+**Windows "Path Too Long" Errors during DensePose Install:**
+By default, Windows has a 260-character path limit that will block the DensePose installation. To fix this, open an Admin PowerShell and run the following command:
+```powershell
+New-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+
+```
+**DensePose "Module Not Found" Error:**
+If Python cannot find DensePose after installation, you may need to manually link the path by doing the following:
+1. Navigate to .venv\Lib\site-packages
+2. Create a file named detectron_fix.pth
+3. Add the absolute paths to your local detectron2 and DensePose folders on separate lines.
+
 
 
 # Install Detectron2 from source
